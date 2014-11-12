@@ -5,31 +5,42 @@ require 'socket'
 # SSL Configurations
 
 class Scanner
-
-
+	
 	def self.ssl_scan
 	
-		# Check version for compatibility 
-		version = RUBY_VERSION 
-		if version.match(/1.9/) || version.match(/1.8/)
-			puts "Starting in compatibility mode\r\n"
-			scan_loop("test_all")
-		else
-			puts "\r\nTesting SSLv2"
-			scan_loop(OpenSSL::SSL::OP_NO_SSLv3 + OpenSSL::SSL::OP_NO_TLSv1 + OpenSSL::SSL::OP_NO_TLSv1_1 + OpenSSL::SSL::OP_NO_TLSv1_2)
-			puts "\r\nTesting SSLv3"
-			scan_loop(OpenSSL::SSL::OP_NO_SSLv2 + OpenSSL::SSL::OP_NO_TLSv1 + OpenSSL::SSL::OP_NO_TLSv1_1 + OpenSSL::SSL::OP_NO_TLSv1_2)
-			puts "\r\nTesting TLSv1"
-			scan_loop(OpenSSL::SSL::OP_NO_SSLv2 + OpenSSL::SSL::OP_NO_SSLv3 + OpenSSL::SSL::OP_NO_TLSv1_1 + OpenSSL::SSL::OP_NO_TLSv1_2)
-			puts "\r\nTesting TLSv1.1"
-			scan_loop(OpenSSL::SSL::OP_NO_SSLv2 + OpenSSL::SSL::OP_NO_SSLv3 + OpenSSL::SSL::OP_NO_TLSv1 + OpenSSL::SSL::OP_NO_TLSv1_2)
-			puts "\r\nTesting TLSv1.2"
-			scan_loop(OpenSSL::SSL::OP_NO_SSLv2 + OpenSSL::SSL::OP_NO_SSLv3 + OpenSSL::SSL::OP_NO_TLSv1 + OpenSSL::SSL::OP_NO_TLSv1_1)
-		end
+	    @NO_SSLv2 = 16777216
+        @NO_SSLv3 = 33554432
+        @NO_TLSv1 = 67108864
+        @NO_TLSv1_1 = 268435456
+        @NO_TLSv1_2 = 134217728
+		# Check version for compatibility  
+		puts "\e[0;32mstrong\033[0m -- \e[0;33mweak\033[0m -- \033[1;31mvulnerable\033[0m"
+		puts "\r\n\033[1mTesting SSLv2: \033[0m"
+		scan_loop(@NO_SSLv3 + @NO_TLSv1 + @NO_TLSv1_1 + @NO_TLSv1_2)
+		puts "\r\n\033[1mTesting SSLv3: \033[0m"
+		scan_loop(@NO_SSLv2 + @NO_TLSv1 + @NO_TLSv1_1 + @NO_TLSv1_2)
+		puts "\r\n\033[1mTesting TLSv1: \033[0m"
+		scan_loop(@NO_SSLv2 + @NO_SSLv3 + @NO_TLSv1_1 + @NO_TLSv1_2)
+		puts "\r\n\033[1mTesting TLSv1.1: \033[0m"
+		scan_loop(@NO_SSLv2 + @NO_SSLv3 + @NO_TLSv1 + @NO_TLSv1_2)
+		puts "\r\n\033[1mTesting TLSv1.2: \033[0m"
+		scan_loop(@NO_SSLv2 + @NO_SSLv3 + @NO_TLSv1 + @NO_TLSv1_1)
 
 		puts get_certificate_information
 	end
 
+
+	def self.scan_sslv2
+		trap("INT") do
+	  		puts "Exiting..."
+	  		break
+	  		exit 1
+		end
+		ssl_context = OpenSSL::SSL::SSLContext.new
+		ssl_context.ciphers = "ALL::HIGH::MEDIUM::LOW::SSL23"
+		ssl_context.options = @NO_SSLv3 + @NO_TLSv1 + @NO_TLSv1_1 + @NO_TLSv1_2
+
+	end
 
 	def self.scan_loop(options)
 		trap("INT") do
@@ -56,9 +67,9 @@ class Scanner
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
     			if options != "test_all"
-    				puts "\e[0;32mServer Supports: #{cipher[0]} #{cipher[2]}\033[0m"
+    				puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[2])}".chomp
     			else
-    				puts "\e[0;32mServer Supports: #{cipher[0]} #{cipher[1]} #{cipher[2]}\033[0m"
+    				puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[1])} #{color_issues(cipher[2])}".chomp
     			end
     			socket_destination.close
     		rescue Exception => e
@@ -69,9 +80,9 @@ class Scanner
     			if ARGV[2] == "--no-error"
     			else	
 	    			if options != "test_all"
-	    				puts "\e[0;32mServer Supports: #{cipher[0]} #{cipher[2]}\033[0m"
+	    				puts "Server Don't Supports: #{cipher[0]} #{cipher[2]}".chomp
 	    			else
-	    				puts "\e[0;32mServer Supports: #{cipher[0]} #{cipher[1]} #{cipher[2]}\033[0m"
+	    				puts "Server Don't Supports: #{cipher[0]} #{cipher[1]} #{cipher[2]}".chomp
 	    			end
     			end
     		end
@@ -89,13 +100,11 @@ class Scanner
 			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
 			socket_destination.connect
 			cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
+			certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
+			issuer = certprops.select { |name, data, type| name == "O" }.first[1]
     	rescue Exception => e
     		
     	end
-    	
-    	  
-		certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
-		issuer = certprops.select { |name, data, type| name == "O" }.first[1]
 		results = ["\r\n== Certificate Information ==",
 				   "valid: #{(socket_destination.verify_result == 0)}",
 				   "valid from: #{cert.not_before}",
@@ -113,8 +122,20 @@ class Scanner
 	end
 
 
-    def self.known_vulunrabilties(data)
+    def self.color_issues(data)
 
+    	case data
+    	when (/RC4/i)
+    		return "\e[0;33m#{data}\033[0m"
+    	when (/40/)
+    		return "\033[1;31m#{data}\033[0m"
+    	when (/^56^/)
+    		return "\033[1;31m#{data}\033[0m"		
+    	when (/MD5/i)
+    		return "\e[0;33m#{data}\033[0m"
+    	else
+    		return "\e[0;32m#{data}\033[0m"
+    	end
     end
 end
 
