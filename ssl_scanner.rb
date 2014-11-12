@@ -26,6 +26,8 @@ class Scanner
 			puts "\r\nTesting TLSv1.2"
 			scan_loop(OpenSSL::SSL::OP_NO_SSLv2 + OpenSSL::SSL::OP_NO_SSLv3 + OpenSSL::SSL::OP_NO_TLSv1 + OpenSSL::SSL::OP_NO_TLSv1_1)
 		end
+
+		puts get_certificate_information
 	end
 
 
@@ -75,6 +77,41 @@ class Scanner
     		end
     	end
     end
+
+    def self.get_certificate_information
+    	begin
+    		ssl_context = OpenSSL::SSL::SSLContext.new
+			ssl_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
+			cert_store = OpenSSL::X509::Store.new
+			cert_store.set_default_paths
+			ssl_context.cert_store = cert_store
+			tcp_socket = TCPSocket.new("#{ARGV[0]}", ARGV[1].to_i)
+			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
+			socket_destination.connect
+			cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
+    	rescue Exception => e
+    		
+    	end
+    	
+    	  
+		certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
+		issuer = certprops.select { |name, data, type| name == "O" }.first[1]
+		results = ["\r\n== Certificate Information ==",
+				   "valid: #{(socket_destination.verify_result == 0)}",
+				   "valid from: #{cert.not_before}",
+		           "valid until: #{cert.not_after}",
+		           "issuer: #{issuer}",
+		           "subject: #{cert.subject}",
+		           "public key: #{cert.public_key}"].join("\r\n")
+
+		begin
+			socket_destination.connect
+		rescue Exception => e
+
+		end
+		return results
+	end
+
 
     def self.known_vulunrabilties(data)
 
