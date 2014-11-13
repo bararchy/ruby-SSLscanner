@@ -85,6 +85,7 @@ class Scanner
 	    			end
 	    		ensure
 	    			socket_destination.close
+	    			tcp_socket.close
 	    		end
 			end
 		end
@@ -115,6 +116,7 @@ class Scanner
 		rescue Exception => e
 		ensure
     		socket_destination.close
+    		tcp_socket.close
 		end
 		return results
 	end
@@ -144,10 +146,9 @@ class Scanner
 			cipher = "\e[0;32m#{cipher_name}\033[0m"
 		end
 
-		case cipher_bits
-		when cipher_bits == 40
+		if cipher_bits == 40
 			bits = "\033[1;31m#{cipher_bits}\033[0m"
-		when cipher_bits == 56
+		elsif cipher_bits == 56
 			bits = "\033[1;31m#{cipher_bits}\033[0m"
 		else
 			bits = "\e[0;32m#{cipher_bits}\033[0m"
