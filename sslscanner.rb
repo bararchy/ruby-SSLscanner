@@ -22,7 +22,7 @@ class Scanner
     TLSV1_2    = NO_SSLV2 + NO_SSLV3 + NO_TLSV1   + NO_TLSV1_1
 
     PROTOCOLS  = [SSLV2, SSLV3, TLSV1, TLSV1_1, TLSV1_2]
-    CIPERS     = 'ALL::HIGH::MEDIUM::LOW::SSL23'
+    CIPHERS    = 'ALL::HIGH::MEDIUM::LOW::SSL23'
 
 
   def ssl_scan
@@ -37,48 +37,56 @@ class Scanner
     scan
   end
 
-
   def scan
-    for protocol in @protocols
-      ssl_context = OpenSSL::SSL::SSLContext.new
-      ssl_context.ciphers = @ciphers
-      ssl_context.options = protocol
-      for cipher in ssl_context.ciphers
-        begin
-          @delay
+    p = 0
+    c = []
+    begin
+      PROTOCOLS.each do |protocol|
+        p = protocol
+        ssl_context = OpenSSL::SSL::SSLContext.new
+        ssl_context.ciphers = CIPHERS
+        ssl_context.options = protocol
+
+        ssl_context.ciphers.each do |cipher|
+          c = cipher
+          sleep 0
           ssl_context = OpenSSL::SSL::SSLContext.new
           ssl_context.options = protocol
           ssl_context.ciphers = cipher[0].to_s
           begin
-            tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
-          rescue Exception => e
-            puts "#{e}"
+            tcp_socket = TCPSocket.new("#{@server}", @port)
+          rescue => e
+            puts e.message
             exit 1
           end
+
           socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
           socket_destination.connect
+
           if protocol == @SSLv3
             puts parse(cipher[0].to_s, cipher[3], protocol)
           else
             puts parse(cipher[0].to_s, cipher[2], protocol)
           end
-        rescue Exception => e
-          if @debug == true
-            puts e
-            if protocol == @SSLv2
-              puts "Server Don't Supports: SSLv2 #{cipher[0]} #{cipher[2]} bits"
-            elsif protocol == @SSLv3
-              puts "Server Don't Supports: SSLv3 #{cipher[0]} #{cipher[3]} bits"
-            elsif protocol == @TLSv1
-              puts "Server Don't Supports: TLSv1 #{cipher[0]} #{cipher[2]} bits"
-            elsif protocol == @TLSv1_1
-              puts "Server Don't Supports: TLSv1.1 #{cipher[0]} #{cipher[2]} bits"
-            elsif protocol == @TLSv1_2
-              puts "Server Don't Supports: TLSv1.2 #{cipher[0]} #{cipher[2]} bits"
-            end	
-          end
-        ensure
-          socket_destination.close
+
+          socket_destination.close if socket_destination
+        end
+      end
+    rescue => e
+      if @debug
+        puts e.message
+        puts e.backtrace.join "\n"
+        case p
+        when SSLV2
+          puts "Server Don't Supports: SSLv2 #{c[0]} #{c[2]} bits"
+        when SSLV3
+          puts "Server Don't Supports: SSLv3 #{c[0]} #{c[3]} bits"
+        when TLSV1
+          puts "Server Don't Supports: TLSv1 #{c[0]} #{c[2]} bits"
+        when TLSV1_1
+          puts "Server Don't Supports: TLSv1.1 #{c[0]} #{c[2]} bits"
+        when TLSV1_2
+          puts "Server Don't Supports: TLSv1.2 #{c[0]} #{c[2]} bits"
         end
       end
     end
@@ -174,7 +182,7 @@ opts.each do |opt, arg|
   when '-s'
     options[:server] = arg
   when '-p'
-    options[:port] = arg
+    options[:port] = arg.to_i
   when '-d'
     options[:debug] = true
   when 'c'
@@ -189,7 +197,7 @@ if options.keys.length <= 2
   exit 0
 end
 
-if options[:server].empty? || options[:port].empty?
+if options[:server].empty? || options[:port] == 0
   $stderr.puts 'Missing required fields'
   puts USAGE
   exit 0
