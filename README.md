@@ -6,4 +6,4 @@ A simple and easy to use SSL Cipher scanner
 
 Usage is: 
 
-ruby ssl_scanner.rb [ip or host] port [optional: --no-error to avoid failed ciphers]
+Usage: ssl_scanner.rb: [-s <server hostname/ip>] [-p <port>] [-d <debug>] [-c <certificate information>]
