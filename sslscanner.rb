@@ -117,7 +117,7 @@ class Scanner
 		           "valid until: #{cert.not_after}",
 		           "issuer: #{issuer}",
 		           "subject: #{cert.subject}",
-		           "public key: #{cert.public_key}"].join("\r\n")	
+		           "public key:\r\n#{cert.public_key}"].join("\r\n")	
 		rescue Exception => e
 		ensure
     		socket_destination.close
