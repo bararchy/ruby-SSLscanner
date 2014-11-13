@@ -83,33 +83,29 @@ class Scanner
   end
 
   def get_certificate_information
-    begin
-      ssl_context = OpenSSL::SSL::SSLContext.new
-      cert_store = OpenSSL::X509::Store.new
-      cert_store.set_default_paths
-      ssl_context.cert_store = cert_store
-      tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
-      socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
-      socket_destination.connect
-      cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
-      certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
-      issuer = certprops.select { |name, data, type| name == "O" }.first[1]
-    rescue Exception => e   		
-    end
-    begin
-      results = ["\r\n\033[1m== Certificate Information ==\033[0m",
-                 "valid: #{(socket_destination.verify_result == 0)}",
-                 "valid from: #{cert.not_before}",
-                 "valid until: #{cert.not_after}",
-                 "issuer: #{issuer}",
-                 "subject: #{cert.subject}",
-                 "public key:\r\n#{cert.public_key}"].join("\r\n")	
-    rescue Exception => e
-    ensure
-      socket_destination.close
-      tcp_socket.close
-    end
-    return results
+    ssl_context = OpenSSL::SSL::SSLContext.new
+    cert_store = OpenSSL::X509::Store.new
+    cert_store.set_default_paths
+    ssl_context.cert_store = cert_store
+
+    tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
+    socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
+    socket_destination.connect
+    cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
+    certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
+    issuer = certprops.select { |name, data, type| name == "O" }.first[1]
+    results = ["\r\n\033[1m== Certificate Information ==\033[0m",
+               "valid: #{(socket_destination.verify_result == 0)}",
+               "valid from: #{cert.not_before}",
+               "valid until: #{cert.not_after}",
+               "issuer: #{issuer}",
+               "subject: #{cert.subject}",
+               "public key:\r\n#{cert.public_key}"].join("\r\n")	
+    results
+  rescue
+  ensure
+    socket_destination.close if socket_destination
+    tcp_socket.close         if tcp_socket
   end
 
 
