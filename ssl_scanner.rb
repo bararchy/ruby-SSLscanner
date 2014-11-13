@@ -11,14 +11,18 @@ class Scanner
 		@delay = sleep 0
 		usage = ("Usage: #{File.basename($0)}: [-s <server hostname/ip>] [-p <port>] [-d <debug>")
 		@debug = false
+		begin
+			loop { case ARGV[0]
+		    	when '-s' then  ARGV.shift; @server = ARGV.shift
+		    	when '-p' then  ARGV.shift; @port = ARGV.shift
+		    	when '-d' then 	ARGV.shift; @debug = true
+		    	when /^-/ then  usage("Unknown option: #{ARGV[0].inspect}")
+		    	else break
+			end; }
+		rescue Exception => e
+			puts usage
+		end
 
-		loop { case ARGV[0]
-		    when '-s' then  ARGV.shift; @server = ARGV.shift
-		    when '-p' then  ARGV.shift; @port = ARGV.shift
-		    when '-d' then 	ARGV.shift; @debug = true
-		    when /^-/ then  usage("Unknown option: #{ARGV[0].inspect}")
-		    else break
-		end; }
 
 		if @server.to_s == "" || @port.to_s == ""
 			puts usage
