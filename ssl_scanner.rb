@@ -23,6 +23,7 @@ class Scanner
 			end; }
 		rescue Exception => e
 			puts usage
+			exit 0
 		end
 
 
