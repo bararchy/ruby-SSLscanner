@@ -36,7 +36,13 @@ class Scanner
     def ssl_scan
 
         # Index by color
-        print "strong".colorize(:green), " -- ", "weak".colorize(:yellow), " -- ", "vulnerable\r\n\r\n".colorize(:red)
+        printf "\nStarting the scan, the results will be presented by the following colors [%s / %s / %s]\n\n" % ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
+        printf "%-15s %-15s %-19s %-12s %s\n" % ["", "Version", "Cipher", " Bits", "Vulnerability"]
+        
+        # fork do 
+        #     '-\|/'.each_char.cycle { |char| print char; sleep 0.5; print "\r"}
+        #     exit 0
+        # end
         scan
         if @check_cert == true
           puts get_certificate_information
@@ -68,9 +74,9 @@ class Scanner
                 socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
                 socket_destination.connect
                 if protocol == SSLV3
-                    puts parse(cipher[0], cipher[3], p)
+                    printf parse(cipher[0], cipher[3], p)
                 else
-                    puts parse(cipher[0], cipher[2], p)
+                    printf parse(cipher[0], cipher[2], p)
                 end
                 rescue => e
                 if @debug
@@ -158,9 +164,11 @@ class Scanner
             bits = "#{cipher_bits}".colorize(:green)
         end
         if protocol == SSLV3 && cipher_name.match(/RC/i).to_s == ""
-            poodle =  "Server Supports: #{ssl_version} #{cipher} #{bits}", " <= POODLE (CVE-2014-3566)".colorize(:red)
-            return poodle.join("")
+            return "Server supports: %-22s %-40s %-10s %s\n"%[ssl_version, cipher, bits, "  <= POODLE (CVE-2014-3566)".colorize(:red)]
+            #poodle =  "Server Supports: #{ssl_version} #{cipher} #{bits}", " <= POODLE (CVE-2014-3566)".colorize(:red)
+            #return poodle.join("")
         else
+            return "Server supports: %-22s %-40s %-10s\n"%[ssl_version, cipher, bits]
             return "Server Supports: #{ssl_version} #{cipher} #{bits}"
         end
     end
