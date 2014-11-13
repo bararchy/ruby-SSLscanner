@@ -165,9 +165,9 @@ end
 
 
 opts = GetoptLong.new(
-  ['-s', GetOptLong::REQUIRED_ARGUMENT],
-  ['-p', GetOptLong::REQUIRED_ARGUMENT],
-  ['-d', GetOptLong::NO_ARGUMENT],
+  ['-s', GetoptLong::REQUIRED_ARGUMENT],
+  ['-p', GetoptLong::REQUIRED_ARGUMENT],
+  ['-d', GetoptLong::NO_ARGUMENT],
   ['-c', GetoptLong::REQUIRED_ARGUMENT]
 )
 
