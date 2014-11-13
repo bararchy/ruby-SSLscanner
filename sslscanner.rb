@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require 'openssl'
 require 'socket'
+require 'colorize'
 
 # SSL Scanner by Bar Hofesh (bararchy) bar.hofesh@gmail.com
 
@@ -34,7 +35,7 @@ class Scanner
 		ssl_ciphers # Setup OpenSSL ciphers per protocol
 
 		# Index by color
-		puts "\e[0;32mstrong\033[0m -- \e[0;33mweak\033[0m -- \033[1;31mvulnerable\033[0m\r\n\r\n"
+		print "strong".colorize(:green), " -- ", "weak".colorize(:yellow), " -- ", "vulnerable\r\n\r\n".colorize(:red)
 		
 		if scan == "exit"
 			exit 1
@@ -129,36 +130,37 @@ class Scanner
 
     def self.parse(cipher_name, cipher_bits, protocol)
 		if protocol == @SSLv2
-			ssl_version = "\033[1;31mSSLv2\033[0m"
+			ssl_version = "SSLv2".colorize(:red)
 		elsif protocol == @SSLv3
-			ssl_version = "\e[0;33mSSLv3\033[0m"
+			ssl_version = "SSLv3".colorize(:yellow)
 		elsif protocol == @TLSv1
-			ssl_version = "\033[1mTLSv1\033[0m"
+			ssl_version = "TLSv1".colorize(:green)
 		elsif protocol == @TLSv1_1
-			ssl_version = "\033[1mTLSv1.1\033[0m"
+			ssl_version = "TLSv1.1".colorize(:green)
 		elsif protocol == @TLSv1_2
-			ssl_version = "\033[1mTLSv1.2\033[0m"
+			ssl_version = "TLSv1.2".colorize(:green)
 		end
 
 		if cipher_name.match(/RC4/i)
-			cipher = "\e[0;33m#{cipher_name}\033[0m"
+			cipher = "#{cipher_name}".colorize(:yellow)
 		elsif cipher_name.match(/RC2/i)
-			cipher = "\033[1;31m#{cipher_name}\033[0m"
+			cipher = "#{cipher_name}".colorize(:red)
 		elsif cipher_name.match(/MD5/i)
-			cipher = "\e[0;33m#{cipher_name}\033[0m"
+			cipher = "#{cipher_name}".colorize(:yellow)
 		else
-			cipher = "\e[0;32m#{cipher_name}\033[0m"
+			cipher = "#{cipher_name}".colorize(:green)
 		end
 
 		if cipher_bits == 40
-			bits = "\033[1;31m#{cipher_bits}\033[0m"
+			bits = "#{cipher_bits}".colorize(:red)
 		elsif cipher_bits == 56
-			bits = "\033[1;31m#{cipher_bits}\033[0m"
+			bits = "#{cipher_bits}".colorize(:red)
 		else
-			bits = "\e[0;32m#{cipher_bits}\033[0m"
+			bits = "#{cipher_bits}".colorize(:green)
 		end
 		if protocol == @SSLv3 && cipher_name.match(/RC/i).to_s == ""
-			return "Server Supports #{ssl_version} #{cipher} #{bits} \033[1;31m -- POODLE (CVE-2014-3566)\033[0m"
+			poodle =  "Server Supports #{ssl_version} #{cipher} #{bits}", " <= POODLE (CVE-2014-3566)".colorize(:red)
+			return poodle.join("")
 		else
 			return "Server Supports #{ssl_version} #{cipher} #{bits}"
 		end
