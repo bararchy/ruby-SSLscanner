@@ -91,9 +91,12 @@ class Scanner
     tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
     socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     socket_destination.connect
+
     cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
     certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
+
     issuer = certprops.select { |name, data, type| name == "O" }.first[1]
+
     results = ["\r\n\033[1m== Certificate Information ==\033[0m",
                "valid: #{(socket_destination.verify_result == 0)}",
                "valid from: #{cert.not_before}",
@@ -159,7 +162,7 @@ opts = GetoptLong.new(
   ['-s', GetoptLong::REQUIRED_ARGUMENT],
   ['-p', GetoptLong::REQUIRED_ARGUMENT],
   ['-d', GetoptLong::NO_ARGUMENT],
-  ['-c', GetoptLong::REQUIRED_ARGUMENT]
+  ['-c', GetoptLong::NO_ARGUMENT]
 )
 
 options = {debug: false, check_cert: false}
