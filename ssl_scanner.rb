@@ -87,7 +87,7 @@ class Scanner
 				tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
-    			if cipher[0].match(/CBC/i).to_s != ""
+    			if cipher[0].match(/RC/i).to_s == ""
     				puts "Server Supports: \033[1mSSLv3 \033[0m \033[1;31m#{cipher[0]} #{cipher[2]}\033[0m bits -- \033[1;31mPOODLE\033[0m"
     			else
     				puts "Server Supports: \033[1mSSLv3 \033[0m #{color_issues(cipher[0])} #{color_issues(cipher[3])} bits"
