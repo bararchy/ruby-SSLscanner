@@ -33,11 +33,17 @@ class Scanner
 		# Index by color
 		puts "\e[0;32mstrong\033[0m -- \e[0;33mweak\033[0m -- \033[1;31mvulnerable\033[0m\r\n\r\n"
 		
-		scan_sslv2
-		scan_sslv3
-		scan_tlsv1
-		scan_tlsv1_1
-		scan_tlsv1_2
+		if scan_sslv2 == "exit"
+			exit 1
+		elsif scan_sslv3 == "exit"
+			exit 1
+		elsif scan_tlsv1 == "exit"
+            exit 1
+        elsif scan_tlsv1_1 == "exit"
+        	exit 1
+        elsif scan_tlsv1_2 == "exit"
+        	exit 1
+        end
 		puts get_certificate_information
 	end
 
@@ -45,8 +51,8 @@ class Scanner
 	def self.scan_sslv2
 		trap("INT") do
 	  		puts "Exiting..."
-	  		break
-	  		exit 1
+	  		return "exit"
+	  		exit
 		end
 		ssl_context = OpenSSL::SSL::SSLContext.new
 		ssl_context.ciphers = @ciphers
@@ -61,7 +67,6 @@ class Scanner
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
     			puts "Server Supports: \033[1;31m SSLv2 #{cipher[0]} #{cipher[2]}\033[0m bits"
-    			socket_destination.close
     		rescue Exception => e
     			if @debug == true	
 	    			puts "Server Don't Supports: SSLv2 #{cipher[0]} #{cipher[2]} bits"
@@ -74,8 +79,8 @@ class Scanner
 	def self.scan_sslv3
 		trap("INT") do
 	  		puts "Exiting..."
-	  		break
-	  		exit 1
+	  		return "exit"
+	  		exit
 		end
 		ssl_context = OpenSSL::SSL::SSLContext.new
 		ssl_context.ciphers = @ciphers
@@ -94,7 +99,6 @@ class Scanner
     			else
     				puts "Server Supports: \033[1mSSLv3 \033[0m #{color_issues(cipher[0])} #{color_issues(cipher[3])} bits"
     			end
-    			socket_destination.close
     		rescue Exception => e
     			if @debug == true	
 	    			puts "Server Don't Supports: #{cipher[0]} #{cipher[3]} bits"
@@ -107,8 +111,8 @@ class Scanner
 	def self.scan_tlsv1
 		trap("INT") do
 	  		puts "Exiting..."
-	  		break
-	  		exit 1
+	  		return "exit"
+	  		exit
 		end
 		ssl_context = OpenSSL::SSL::SSLContext.new
 		ssl_context.ciphers = @ciphers
@@ -123,7 +127,6 @@ class Scanner
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
     			puts "Server Supports: \033[1mTLSv1 \033[0m #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
-    			socket_destination.close
     		rescue Exception => e
     			if @debug == true	
 	    			puts "Server Don't Supports: \033[1mTLSv1 \033[0m #{cipher[0]} #{cipher[2]} bits"
@@ -136,8 +139,8 @@ class Scanner
 		def self.scan_tlsv1_1
 		trap("INT") do
 	  		puts "Exiting..."
-	  		break
-	  		exit 1
+	  		return "exit"
+	  		exit
 		end
 		ssl_context = OpenSSL::SSL::SSLContext.new
 		ssl_context.ciphers = @ciphers
@@ -152,7 +155,6 @@ class Scanner
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
     			puts "Server Supports: \033[1mTLSv1.1 \033[0m #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
-    			socket_destination.close
     		rescue Exception => e
     			if @debug == true	
 	    			puts "Server Don't Supports: \033[1mTLSv1.1 \033[0m #{cipher[0]} #{cipher[2]} bits"
@@ -165,8 +167,7 @@ class Scanner
 		def self.scan_tlsv1_2
 		trap("INT") do
 	  		puts "Exiting..."
-	  		break
-	  		exit 1
+	  		return "exit"
 		end
 		ssl_context = OpenSSL::SSL::SSLContext.new
 		ssl_context.ciphers = @ciphers
@@ -181,7 +182,6 @@ class Scanner
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
     			puts "Server Supports: \033[1mTLSv1.2 \033[0m #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
-    			socket_destination.close
     		rescue Exception => e
     			if @debug == true	
 	    			puts "Server Don't Supports: \033[1mTLSv1.2 \033[0m #{cipher[0]} #{cipher[2]} bits"
@@ -215,8 +215,9 @@ class Scanner
 		           "issuer: #{issuer}",
 		           "subject: #{cert.subject}",
 		           "public key: #{cert.public_key}"].join("\r\n")	
-		socket_destination.connect
 		rescue Exception => e
+		ensure
+    		socket_destination.close
 		end
 		return results
 	end
