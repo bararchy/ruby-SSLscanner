@@ -4,6 +4,8 @@ require 'getoptlong'
 require 'openssl'
 require 'socket'
 
+USAGE = "Usage: #{File.basename($0)}: [-s <server hostname/ip>] [-p <port>] [-d <debug>] [-c <certificate information>]"
+
 # SSL Scanner by Bar Hofesh (bararchy) bar.hofesh@gmail.com
 
 class Scanner
@@ -25,37 +27,10 @@ class Scanner
 
   def ssl_scan
 
-    usage = ("Usage: #{File.basename($0)}: [-s <server hostname/ip>] [-p <port>] [-d <debug>] [-c <certificate information>]")
-    @debug = false
-    check_cert = false
-    begin
-      loop { case ARGV[0]
-      when '-s' then  ARGV.shift; @server = ARGV.shift
-      when '-p' then  ARGV.shift; @port = ARGV.shift
-      when '-d' then 	ARGV.shift; @debug = true
-      when '-c' then  ARGV.shift; check_cert = true		    		
-      when /^-/ then  usage("Unknown option: #{ARGV[0].inspect}")
-      else break
-      end; }
-    rescue Exception => e
-      puts usage
-      exit 0
-    end
-
-
-    if @server.to_s == "" || @port.to_s == ""
-      puts usage
-      exit 0
-    end
-    ssl_ciphers # Setup OpenSSL ciphers per protocol
-
     # Index by color
     puts "\e[0;32mstrong\033[0m -- \e[0;33mweak\033[0m -- \033[1;31mvulnerable\033[0m\r\n\r\n"
 
-    if scan == "exit"
-      exit 1
-    end
-    if check_cert == true
+    if @check_cert == true
       puts get_certificate_information
     end
   end
@@ -180,7 +155,47 @@ class Scanner
     end
   end
 
+  def initialize(options = {})
+    @server     = options[:server]
+    @port       = options[:port]
+    @debug      = options[:debug]
+    @check_cert = options[:check_cert]
+  end
 end
 
-scanner = Scanner.new
+
+opts = GetoptLong.new(
+  ['-s', GetOptLong::REQUIRED_ARGUMENT],
+  ['-p', GetOptLong::REQUIRED_ARGUMENT],
+  ['-d', GetOptLong::NO_ARGUMENT],
+  ['-c', GetoptLong::REQUIRED_ARGUMENT]
+)
+
+options = {debug: false, check_cert: false}
+
+opts.each do |opt, arg|
+  case opt
+  when '-s'
+    options[:server] = arg
+  when '-p'
+    options[:port] = arg
+  when '-d'
+    options[:debug] = true
+  when 'c'
+    options[:check_cert] = true
+  end
+end
+
+unless ARGV.length >= 2
+  puts USAGE
+  exit 0
+end
+
+if options[:server].empty? || options[:port].empty?
+  $stderr.puts 'Missing required fields'
+  puts USAGE
+  exit 0
+end
+
+scanner = Scanner.new(options)
 scanner.ssl_scan
