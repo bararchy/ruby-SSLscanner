@@ -66,6 +66,8 @@ class Scanner
     			if @debug == true	
 	    			puts "Server Don't Supports: SSLv2 #{cipher[0]} #{cipher[2]} bits"
     			end
+    		ensure
+    			socket_destination.close
     		end
 		end
 	end
