@@ -9,20 +9,27 @@ USAGE = "Usage: #{File.basename($0)}: [-s <server hostname/ip>] [-p <port>] [-d 
 # SSL Scanner by Bar Hofesh (bararchy) bar.hofesh@gmail.com
 
 class Scanner
-    NO_SSLV2   = 16777216
-    NO_SSLV3   = 33554432
-    NO_TLSV1   = 67108864
-    NO_TLSV1_1 = 268435456
-    NO_TLSV1_2 = 134217728
+    NO_SSLV2      = 16777216
+    NO_SSLV3      = 33554432
+    NO_TLSV1      = 67108864
+    NO_TLSV1_1    = 268435456
+    NO_TLSV1_2    = 134217728
 
-    SSLV2      = NO_SSLV3 + NO_TLSV1 + NO_TLSV1_1 + NO_TLSV1_2
-    SSLV3      = NO_SSLV2 + NO_TLSV1 + NO_TLSV1_1 + NO_TLSV1_2
-    TLSV1      = NO_SSLV2 + NO_SSLV3 + NO_TLSV1_1 + NO_TLSV1_2
-    TLSV1_1    = NO_SSLV2 + NO_SSLV3 + NO_TLSV1   + NO_TLSV1_2
-    TLSV1_2    = NO_SSLV2 + NO_SSLV3 + NO_TLSV1   + NO_TLSV1_1
+    SSLV2         = NO_SSLV3 + NO_TLSV1 + NO_TLSV1_1 + NO_TLSV1_2
+    SSLV3         = NO_SSLV2 + NO_TLSV1 + NO_TLSV1_1 + NO_TLSV1_2
+    TLSV1         = NO_SSLV2 + NO_SSLV3 + NO_TLSV1_1 + NO_TLSV1_2
+    TLSV1_1       = NO_SSLV2 + NO_SSLV3 + NO_TLSV1   + NO_TLSV1_2
+    TLSV1_2       = NO_SSLV2 + NO_SSLV3 + NO_TLSV1   + NO_TLSV1_1
 
-    PROTOCOLS  = [SSLV2, SSLV3, TLSV1, TLSV1_1, TLSV1_2]
-    CIPHERS    = 'ALL::HIGH::MEDIUM::LOW::SSL23'
+    PROTOCOLS     = [SSLV2, SSLV3, TLSV1, TLSV1_1, TLSV1_2]
+    CIPHERS       = 'ALL::HIGH::MEDIUM::LOW::SSL23'
+    PROTOCOL_NAME = { 
+      SSLV2   => 'SSLv2',
+      SSLV3   => 'SSLv3',
+      TLSV1   => 'TLSv1',
+      TLSV1_1 => 'TLSv1.1',
+      TLSV1_2 => 'TLSv1.2'
+    }
 
 
   def ssl_scan
@@ -123,24 +130,12 @@ class Scanner
 
 
   def parse(cipher_name, cipher_bits, protocol)
-    if protocol == @SSLv2
-      ssl_version = "\033[1;31mSSLv2\033[0m"
-    elsif protocol == @SSLv3
-      ssl_version = "\e[0;33mSSLv3\033[0m"
-    elsif protocol == @TLSv1
-      ssl_version = "\033[1mTLSv1\033[0m"
-    elsif protocol == @TLSv1_1
-      ssl_version = "\033[1mTLSv1.1\033[0m"
-    elsif protocol == @TLSv1_2
-      ssl_version = "\033[1mTLSv1.2\033[0m"
-    end
+    ssl_version = PROTOCOL_NAME[protocol] rescue ''
 
-    if cipher_name.match(/RC4/i)
-      cipher = "\e[0;33m#{cipher_name}\033[0m"
-    elsif cipher_name.match(/RC2/i)
-      cipher = "\033[1;31m#{cipher_name}\033[0m"
-    elsif cipher_name.match(/MD5/i)
-      cipher = "\e[0;33m#{cipher_name}\033[0m"
+    if cipher_name.match(/(RC[24])/i)
+      cipher = "\e[0;33m#{$1}\033[0m"
+    elsif cipher_name.match(/(MD5)/i)
+      cipher = "\e[0;33m#{$1}\033[0m"
     else
       cipher = "\e[0;32m#{cipher_name}\033[0m"
     end
@@ -152,7 +147,7 @@ class Scanner
     else
       bits = "\e[0;32m#{cipher_bits}\033[0m"
     end
-    if protocol == @SSLv3 && cipher_name.match(/RC/i).to_s == ""
+    if protocol == SSLV3 && cipher_name.match(/RC/i) == ""
       return "Server Supports #{ssl_version} #{cipher} #{bits} \033[1;31m -- POODLE (CVE-2014-3566)\033[0m"
     else
       return "Server Supports #{ssl_version} #{cipher} #{bits}"
