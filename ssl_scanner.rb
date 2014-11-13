@@ -60,7 +60,12 @@ class Scanner
 	    			ssl_context = OpenSSL::SSL::SSLContext.new
 	    			ssl_context.options = protocol
 	    			ssl_context.ciphers = cipher[0].to_s
-					tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
+					begin
+						tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
+					rescue Exception => e
+						puts "#{e}"
+						exit 1
+					end
 	    			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
 	    			socket_destination.connect
 	    			if protocol == @SSLv3
@@ -70,7 +75,7 @@ class Scanner
 	    			end
 	    		rescue Exception => e
 	    			if @debug == true
-	    				puts el
+	    				puts e
 	    				if protocol == @SSLv2
 	    					puts "Server Don't Supports: SSLv2 #{cipher[0]} #{cipher[2]} bits"
 	    				elsif protocol == @SSLv3
@@ -85,7 +90,6 @@ class Scanner
 	    			end
 	    		ensure
 	    			socket_destination.close
-	    			tcp_socket.close
 	    		end
 			end
 		end
@@ -135,12 +139,11 @@ class Scanner
 			ssl_version = "TLSv1.2"
 		end
 
-		case cipher_name
-		when cipher_name.match(/RC4/i)
+		if cipher_name.match(/RC4/i)
 			cipher = "\e[0;33m#{cipher_name}\033[0m"
-		when cipher_name.match(/RC2/i)
+		elsif cipher_name.match(/RC2/i)
 			cipher = "\033[1;31m#{cipher_name}\033[0m"
-		when cipher_name.match(/MD5/i)
+		elsif cipher_name.match(/MD5/i)
 			cipher = "\e[0;33m#{cipher_name}\033[0m"
 		else
 			cipher = "\e[0;32m#{cipher_name}\033[0m"
@@ -153,7 +156,7 @@ class Scanner
 		else
 			bits = "\e[0;32m#{cipher_bits}\033[0m"
 		end
-		if protocol == @SSLv3 && cipher_name.match(/RC/i).to_s != ""
+		if protocol == @SSLv3 && cipher_name.match(/RC/i).to_s == ""
 			return "Server Supports #{ssl_version} #{cipher} #{bits} \033[1;31m -- POODLE (CVE-2014-3566)\033[0m"
 		else
 			return "Server Supports #{ssl_version} #{cipher} #{bits}"
