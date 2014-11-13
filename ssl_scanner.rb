@@ -7,25 +7,33 @@ require 'socket'
 class Scanner
 	
 	def self.ssl_scan
-	
-	    @NO_SSLv2 = 16777216
-        @NO_SSLv3 = 33554432
-        @NO_TLSv1 = 67108864
-        @NO_TLSv1_1 = 268435456
-        @NO_TLSv1_2 = 134217728
-		# Check version for compatibility  
-		puts "\e[0;32mstrong\033[0m -- \e[0;33mweak\033[0m -- \033[1;31mvulnerable\033[0m"
-		puts "\r\n\033[1mTesting SSLv2: \033[0m"
-		scan_loop(@NO_SSLv3 + @NO_TLSv1 + @NO_TLSv1_1 + @NO_TLSv1_2)
-		puts "\r\n\033[1mTesting SSLv3: \033[0m"
-		scan_loop(@NO_SSLv2 + @NO_TLSv1 + @NO_TLSv1_1 + @NO_TLSv1_2)
-		puts "\r\n\033[1mTesting TLSv1: \033[0m"
-		scan_loop(@NO_SSLv2 + @NO_SSLv3 + @NO_TLSv1_1 + @NO_TLSv1_2)
-		puts "\r\n\033[1mTesting TLSv1.1: \033[0m"
-		scan_loop(@NO_SSLv2 + @NO_SSLv3 + @NO_TLSv1 + @NO_TLSv1_2)
-		puts "\r\n\033[1mTesting TLSv1.2: \033[0m"
-		scan_loop(@NO_SSLv2 + @NO_SSLv3 + @NO_TLSv1 + @NO_TLSv1_1)
 
+		@delay = sleep 0
+		usage = ("Usage: #{File.basename($0)}: [-s <server hostname/ip>] [-p <port>] [-d <debug>")
+		@debug = false
+
+		loop { case ARGV[0]
+		    when '-s' then  ARGV.shift; @server = ARGV.shift
+		    when '-p' then  ARGV.shift; @port = ARGV.shift
+		    when '-d' then 	ARGV.shift; @debug = true
+		    when /^-/ then  usage("Unknown option: #{ARGV[0].inspect}")
+		    else break
+		end; }
+
+		if @server.to_s == "" || @port.to_s == ""
+			puts usage
+			exit 0
+		end
+		ssl_ciphers # Setup OpenSSL ciphers per protocol
+
+		# Index by color
+		puts "\e[0;32mstrong\033[0m -- \e[0;33mweak\033[0m -- \033[1;31mvulnerable\033[0m"
+		
+		scan_sslv2
+		scan_sslv3
+		scan_tlsv1
+		scan_tlsv1_1
+		scan_tlsv1_2
 		puts get_certificate_information
 	end
 
@@ -36,87 +44,170 @@ class Scanner
 	  		break
 	  		exit 1
 		end
+		puts "\r\n\033[1mTesting SSLv2: \033[0m"
 		ssl_context = OpenSSL::SSL::SSLContext.new
-		ssl_context.ciphers = "ALL::HIGH::MEDIUM::LOW::SSL23"
-		ssl_context.options = @NO_SSLv3 + @NO_TLSv1 + @NO_TLSv1_1 + @NO_TLSv1_2
-
+		ssl_context.ciphers = @ciphers
+		ssl_context.options = @SSLv2
+		for cipher in ssl_context.ciphers
+			begin
+    			@delay
+    			ssl_context = OpenSSL::SSL::SSLContext.new
+    			ssl_context.options = @SSLv2
+    			ssl_context.ciphers = cipher[0].to_s
+				tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
+    			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
+    			socket_destination.connect
+    			puts "Server Supports: \033[1;31m#{cipher[0]} #{cipher[2]}\033[0m bits"
+    			socket_destination.close
+    		rescue Exception => e
+    			if @debug == true	
+	    			puts "Server Don't Supports: #{cipher[0]} #{cipher[2]} bits"
+    			end
+    		end
+		end
 	end
-
-	def self.scan_loop(options)
+	def self.scan_sslv3
 		trap("INT") do
 	  		puts "Exiting..."
 	  		break
 	  		exit 1
 		end
+		puts "\r\n\033[1mTesting SSLv3: \033[0m"
 		ssl_context = OpenSSL::SSL::SSLContext.new
-		ssl_context.ciphers = "ALL::HIGH::MEDIUM::LOW::SSL23"
-		if options != "test_all"
-			ssl_context.options = options
-    	end
-    	for cipher in ssl_context.ciphers
-    		begin
-    			sleep 0.1
+		ssl_context.ciphers = @ciphers
+		ssl_context.options = @SSLv3
+		for cipher in ssl_context.ciphers
+			begin
+    			@delay
     			ssl_context = OpenSSL::SSL::SSLContext.new
-    			ssl_context.ciphers = "ALL::HIGH::MEDIUM::LOW::SSL23"
-    			if options != "test_all"
-					ssl_context.options = options
-    			end
-				ssl_context.verify_mode = OpenSSL::SSL::VERIFY_NONE	
-				tcp_socket = TCPSocket.new("#{ARGV[0]}", ARGV[1].to_i)
+    			ssl_context.options = @SSLv3
     			ssl_context.ciphers = cipher[0].to_s
+				tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
-    			if options != "test_all"
-    				puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[2])}".chomp
+    			if cipher[0].match(/RC/i).to_s == ""
+    				puts "Server Supports: \033[1;31m#{cipher[0]} #{cipher[2]}\033[0m bits"
     			else
-    				puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[1])} #{color_issues(cipher[2])}".chomp
+    				puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[3])} bits"
     			end
     			socket_destination.close
     		rescue Exception => e
-    			if e.to_s.match(/unsupported protocol/)
-    				puts "No Support for protocol"
-    				break
-    			end
-    			if ARGV[2] == "--no-error"
-    			else	
-	    			if options != "test_all"
-	    				puts "Server Don't Supports: #{cipher[0]} #{cipher[2]}".chomp
-	    			else
-	    				puts "Server Don't Supports: #{cipher[0]} #{cipher[1]} #{cipher[2]}".chomp
-	    			end
+    			if @debug == true	
+	    			puts "Server Don't Supports: #{cipher[0]} #{cipher[3]} bits"
     			end
     		end
-    	end
-    end
+		end
+	end
+	def self.scan_tlsv1
+		trap("INT") do
+	  		puts "Exiting..."
+	  		break
+	  		exit 1
+		end
+		puts "\r\n\033[1mTesting TLSv1: \033[0m"
+		ssl_context = OpenSSL::SSL::SSLContext.new
+		ssl_context.ciphers = @ciphers
+		ssl_context.options = @TLSv1
+		for cipher in ssl_context.ciphers
+			begin
+    			@delay
+    			ssl_context = OpenSSL::SSL::SSLContext.new
+    			ssl_context.options = @TLSv1
+    			ssl_context.ciphers = cipher[0].to_s
+				tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
+    			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
+    			socket_destination.connect
+    			puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
+    			socket_destination.close
+    		rescue Exception => e
+    			if @debug == true	
+	    			puts "Server Don't Supports: #{cipher[0]} #{cipher[2]} bits"
+    			end
+    		end
+		end
+	end
+		def self.scan_tlsv1_1
+		trap("INT") do
+	  		puts "Exiting..."
+	  		break
+	  		exit 1
+		end
+		puts "\r\n\033[1mTesting TLSv1.1: \033[0m"
+		ssl_context = OpenSSL::SSL::SSLContext.new
+		ssl_context.ciphers = @ciphers
+		ssl_context.options = @TLSv1_1
+		for cipher in ssl_context.ciphers
+			begin
+    			@delay
+    			ssl_context = OpenSSL::SSL::SSLContext.new
+    			ssl_context.options = @TLSv1_1
+    			ssl_context.ciphers = cipher[0].to_s
+				tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
+    			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
+    			socket_destination.connect
+    			puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
+    			socket_destination.close
+    		rescue Exception => e
+    			if @debug == true	
+	    			puts "Server Don't Supports: #{cipher[0]} #{cipher[2]} bits"
+    			end
+    		end
+		end
+	end
+		def self.scan_tlsv1_2
+		trap("INT") do
+	  		puts "Exiting..."
+	  		break
+	  		exit 1
+		end
+		puts "\r\n\033[1mTesting TLSv1.2: \033[0m"
+		ssl_context = OpenSSL::SSL::SSLContext.new
+		ssl_context.ciphers = @ciphers
+		ssl_context.options = @TLSv1_2
+		for cipher in ssl_context.ciphers
+			begin
+    			@delay
+    			ssl_context = OpenSSL::SSL::SSLContext.new
+    			ssl_context.options = @TLSv1_2
+    			ssl_context.ciphers = cipher[0].to_s
+				tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
+    			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
+    			socket_destination.connect
+    			puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
+    			socket_destination.close
+    		rescue Exception => e
+    			if @debug == true	
+	    			puts "Server Don't Supports: #{cipher[0]} #{cipher[2]} bits"
+    			end
+    		end
+		end
+	end
+
 
     def self.get_certificate_information
     	begin
     		ssl_context = OpenSSL::SSL::SSLContext.new
-			ssl_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
 			cert_store = OpenSSL::X509::Store.new
 			cert_store.set_default_paths
 			ssl_context.cert_store = cert_store
-			tcp_socket = TCPSocket.new("#{ARGV[0]}", ARGV[1].to_i)
+			tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
 			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
 			socket_destination.connect
 			cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
 			certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
 			issuer = certprops.select { |name, data, type| name == "O" }.first[1]
-    	rescue Exception => e
-    		
+    	rescue Exception => e   		
     	end
-		results = ["\r\n== Certificate Information ==",
+		begin
+		results = ["\r\n\033[1m== Certificate Information ==\033[0m",
 				   "valid: #{(socket_destination.verify_result == 0)}",
 				   "valid from: #{cert.not_before}",
 		           "valid until: #{cert.not_after}",
 		           "issuer: #{issuer}",
 		           "subject: #{cert.subject}",
-		           "public key: #{cert.public_key}"].join("\r\n")
-
-		begin
-			socket_destination.connect
+		           "public key: #{cert.public_key}"].join("\r\n")	
+		socket_destination.connect
 		rescue Exception => e
-
 		end
 		return results
 	end
@@ -124,19 +215,36 @@ class Scanner
 
     def self.color_issues(data)
 
-    	case data
-    	when (/RC4/i)
+    	if data.to_s.match(/RC4/i)
     		return "\e[0;33m#{data}\033[0m"
-    	when (/40/)
+    	elsif data.to_s.match(/RC2/i)
     		return "\033[1;31m#{data}\033[0m"
-    	when (/^56^/)
+    	elsif data == 40
+    		return "\033[1;31m#{data}\033[0m"
+    	elsif data == 56
     		return "\033[1;31m#{data}\033[0m"		
-    	when (/MD5/i)
+    	elsif data.to_s.match(/MD5/i)
     		return "\e[0;33m#{data}\033[0m"
     	else
     		return "\e[0;32m#{data}\033[0m"
     	end
     end
+
+    def self.ssl_ciphers
+
+    	no_SSLv2 = 16777216
+        no_SSLv3 = 33554432
+        no_TLSv1 = 67108864
+        no_TLSv1_1 = 268435456
+        no_TLSv1_2 = 134217728
+
+        @SSLv2 = no_SSLv3 + no_TLSv1 + no_TLSv1_1 + no_TLSv1_2
+        @SSLv3 = no_SSLv2 + no_TLSv1 + no_TLSv1_1 + no_TLSv1_2
+        @TLSv1 = no_SSLv2 + no_SSLv3 + no_TLSv1_1 + no_TLSv1_2
+        @TLSv1_1 = no_SSLv2 + no_SSLv3 + no_TLSv1 + no_TLSv1_2
+        @TLSv1_2 = no_SSLv2 + no_SSLv3 + no_TLSv1 + no_TLSv1_1
+        @ciphers = "ALL::HIGH::MEDIUM::LOW::SSL23"
+    end 
 end
 
 Scanner.ssl_scan
