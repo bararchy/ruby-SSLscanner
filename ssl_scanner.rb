@@ -2,7 +2,7 @@
 require 'openssl'
 require 'socket'
 
-# SSL Configurations
+# SSL Scanner by Bar Hofesh (bararchy) bar.hofesh@gmail.com
 
 class Scanner
 	
