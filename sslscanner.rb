@@ -33,6 +33,8 @@ class Scanner
     if @check_cert == true
       puts get_certificate_information
     end
+
+    scan
   end
 
 
