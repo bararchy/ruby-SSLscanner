@@ -31,7 +31,7 @@ class Scanner
 		ssl_ciphers # Setup OpenSSL ciphers per protocol
 
 		# Index by color
-		puts "\e[0;32mstrong\033[0m -- \e[0;33mweak\033[0m -- \033[1;31mvulnerable\033[0m"
+		puts "\e[0;32mstrong\033[0m -- \e[0;33mweak\033[0m -- \033[1;31mvulnerable\033[0m\r\n\r\n"
 		
 		scan_sslv2
 		scan_sslv3
@@ -48,7 +48,6 @@ class Scanner
 	  		break
 	  		exit 1
 		end
-		puts "\r\n\033[1mTesting SSLv2: \033[0m"
 		ssl_context = OpenSSL::SSL::SSLContext.new
 		ssl_context.ciphers = @ciphers
 		ssl_context.options = @SSLv2
@@ -61,11 +60,11 @@ class Scanner
 				tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
-    			puts "Server Supports: \033[1;31m#{cipher[0]} #{cipher[2]}\033[0m bits"
+    			puts "Server Supports: \033[1;31m SSLv2 #{cipher[0]} #{cipher[2]}\033[0m bits"
     			socket_destination.close
     		rescue Exception => e
     			if @debug == true	
-	    			puts "Server Don't Supports: #{cipher[0]} #{cipher[2]} bits"
+	    			puts "Server Don't Supports: SSLv2 #{cipher[0]} #{cipher[2]} bits"
     			end
     		end
 		end
@@ -76,7 +75,6 @@ class Scanner
 	  		break
 	  		exit 1
 		end
-		puts "\r\n\033[1mTesting SSLv3: \033[0m"
 		ssl_context = OpenSSL::SSL::SSLContext.new
 		ssl_context.ciphers = @ciphers
 		ssl_context.options = @SSLv3
@@ -89,10 +87,10 @@ class Scanner
 				tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
-    			if cipher[0].match(/RC/i).to_s == ""
-    				puts "Server Supports: \033[1;31m#{cipher[0]} #{cipher[2]}\033[0m bits"
+    			if cipher[0].match(/CBC/i).to_s != ""
+    				puts "Server Supports: \033[1mSSLv3 \033[0m \033[1;31m#{cipher[0]} #{cipher[2]}\033[0m bits -- \033[1;31mPOODLE\033[0m"
     			else
-    				puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[3])} bits"
+    				puts "Server Supports: \033[1mSSLv3 \033[0m #{color_issues(cipher[0])} #{color_issues(cipher[3])} bits"
     			end
     			socket_destination.close
     		rescue Exception => e
@@ -108,7 +106,6 @@ class Scanner
 	  		break
 	  		exit 1
 		end
-		puts "\r\n\033[1mTesting TLSv1: \033[0m"
 		ssl_context = OpenSSL::SSL::SSLContext.new
 		ssl_context.ciphers = @ciphers
 		ssl_context.options = @TLSv1
@@ -121,11 +118,11 @@ class Scanner
 				tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
-    			puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
+    			puts "Server Supports: \033[1mTLSv1 \033[0m #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
     			socket_destination.close
     		rescue Exception => e
     			if @debug == true	
-	    			puts "Server Don't Supports: #{cipher[0]} #{cipher[2]} bits"
+	    			puts "Server Don't Supports: \033[1mTLSv1 \033[0m #{cipher[0]} #{cipher[2]} bits"
     			end
     		end
 		end
@@ -136,7 +133,6 @@ class Scanner
 	  		break
 	  		exit 1
 		end
-		puts "\r\n\033[1mTesting TLSv1.1: \033[0m"
 		ssl_context = OpenSSL::SSL::SSLContext.new
 		ssl_context.ciphers = @ciphers
 		ssl_context.options = @TLSv1_1
@@ -149,11 +145,11 @@ class Scanner
 				tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
-    			puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
+    			puts "Server Supports: \033[1mTLSv1.1 \033[0m #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
     			socket_destination.close
     		rescue Exception => e
     			if @debug == true	
-	    			puts "Server Don't Supports: #{cipher[0]} #{cipher[2]} bits"
+	    			puts "Server Don't Supports: \033[1mTLSv1.1 \033[0m #{cipher[0]} #{cipher[2]} bits"
     			end
     		end
 		end
@@ -164,7 +160,6 @@ class Scanner
 	  		break
 	  		exit 1
 		end
-		puts "\r\n\033[1mTesting TLSv1.2: \033[0m"
 		ssl_context = OpenSSL::SSL::SSLContext.new
 		ssl_context.ciphers = @ciphers
 		ssl_context.options = @TLSv1_2
@@ -177,11 +172,11 @@ class Scanner
 				tcp_socket = TCPSocket.new("#{@server}", @port.to_i)
     			socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
     			socket_destination.connect
-    			puts "Server Supports: #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
+    			puts "Server Supports: \033[1mTLSv1.2 \033[0m #{color_issues(cipher[0])} #{color_issues(cipher[2])} bits"
     			socket_destination.close
     		rescue Exception => e
     			if @debug == true	
-	    			puts "Server Don't Supports: #{cipher[0]} #{cipher[2]} bits"
+	    			puts "Server Don't Supports: \033[1mTLSv1.2 \033[0m #{cipher[0]} #{cipher[2]} bits"
     			end
     		end
 		end
