@@ -97,6 +97,8 @@ class Scanner
     			if @debug == true	
 	    			puts "Server Don't Supports: #{cipher[0]} #{cipher[3]} bits"
     			end
+    		ensure
+    			socket_destination.close
     		end
 		end
 	end
@@ -124,6 +126,8 @@ class Scanner
     			if @debug == true	
 	    			puts "Server Don't Supports: \033[1mTLSv1 \033[0m #{cipher[0]} #{cipher[2]} bits"
     			end
+    		ensure
+    			socket_destination.close
     		end
 		end
 	end
@@ -151,6 +155,8 @@ class Scanner
     			if @debug == true	
 	    			puts "Server Don't Supports: \033[1mTLSv1.1 \033[0m #{cipher[0]} #{cipher[2]} bits"
     			end
+    		ensure
+    			socket_destination.close
     		end
 		end
 	end
@@ -178,6 +184,8 @@ class Scanner
     			if @debug == true	
 	    			puts "Server Don't Supports: \033[1mTLSv1.2 \033[0m #{cipher[0]} #{cipher[2]} bits"
     			end
+    		ensure
+    			socket_destination.close
     		end
 		end
 	end
