@@ -47,7 +47,6 @@ class Scanner
   def scan
     p = 0
     c = []
-    begin
       PROTOCOLS.each do |protocol|
         p = protocol
         ssl_context = OpenSSL::SSL::SSLContext.new
@@ -55,48 +54,54 @@ class Scanner
         ssl_context.options = protocol
 
         ssl_context.ciphers.each do |cipher|
-          c = cipher
-          sleep 0
-          ssl_context = OpenSSL::SSL::SSLContext.new
-          ssl_context.options = protocol
-          ssl_context.ciphers = cipher[0].to_s
           begin
-            tcp_socket = TCPSocket.new("#{@server}", @port)
+            c = cipher
+            sleep 0
+            ssl_context = OpenSSL::SSL::SSLContext.new
+            ssl_context.options = protocol
+            ssl_context.ciphers = cipher[0].to_s
+            begin
+              tcp_socket = TCPSocket.new("#{@server}", @port)
+            rescue => e
+              puts e.message
+              exit 1
+            end
+
+            print "Testing: "
+            if protocol == SSLV3
+              print parse(cipher[0], cipher[3], protocol)
+            else
+              print parse(cipher[0], cipher[2], protocol)
+            end
+
+            socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
+            socket_destination.connect
+
+            puts " \e[1;32msupported\e[0m"
+
           rescue => e
-            puts e.message
-            exit 1
+            puts " \e[1;31munsupported\e[0m"
+            if @debug
+              puts e.message
+              puts e.backtrace.join "\n"
+              case p
+              when SSLV2
+                puts "Server Don't Supports: SSLv2 #{c[0]} #{c[2]} bits"
+              when SSLV3
+                puts "Server Don't Supports: SSLv3 #{c[0]} #{c[3]} bits"
+              when TLSV1
+                puts "Server Don't Supports: TLSv1 #{c[0]} #{c[2]} bits"
+              when TLSV1_1
+                puts "Server Don't Supports: TLSv1.1 #{c[0]} #{c[2]} bits"
+              when TLSV1_2
+                puts "Server Don't Supports: TLSv1.2 #{c[0]} #{c[2]} bits"
+              end
+            end
+          ensure
+            socket_destination.close if socket_destination
           end
-
-          socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
-          socket_destination.connect
-
-          if protocol == @SSLv3
-            puts parse(cipher[0].to_s, cipher[3], protocol)
-          else
-            puts parse(cipher[0].to_s, cipher[2], protocol)
-          end
-
-          socket_destination.close if socket_destination
         end
       end
-    rescue => e
-      if @debug
-        puts e.message
-        puts e.backtrace.join "\n"
-        case p
-        when SSLV2
-          puts "Server Don't Supports: SSLv2 #{c[0]} #{c[2]} bits"
-        when SSLV3
-          puts "Server Don't Supports: SSLv3 #{c[0]} #{c[3]} bits"
-        when TLSV1
-          puts "Server Don't Supports: TLSv1 #{c[0]} #{c[2]} bits"
-        when TLSV1_1
-          puts "Server Don't Supports: TLSv1.1 #{c[0]} #{c[2]} bits"
-        when TLSV1_2
-          puts "Server Don't Supports: TLSv1.2 #{c[0]} #{c[2]} bits"
-        end
-      end
-    end
   end
 
   def get_certificate_information
@@ -148,9 +153,9 @@ class Scanner
       bits = "\e[0;32m#{cipher_bits}\033[0m"
     end
     if protocol == SSLV3 && cipher_name.match(/RC/i) == ""
-      return "Server Supports #{ssl_version} #{cipher} #{bits} \033[1;31m -- POODLE (CVE-2014-3566)\033[0m"
+      return "#{ssl_version} #{cipher} #{bits} \033[1;31m -- POODLE (CVE-2014-3566)\033[0m"
     else
-      return "Server Supports #{ssl_version} #{cipher} #{bits}"
+      return "#{ssl_version} #{cipher} #{bits}"
     end
   end
 
