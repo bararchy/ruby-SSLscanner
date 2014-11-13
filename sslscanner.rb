@@ -37,11 +37,6 @@ class Scanner
 
 
   def scan
-    trap("INT") do
-      puts "Exiting..."
-      return "exit"
-      exit
-    end
     for protocol in @protocols
       ssl_context = OpenSSL::SSL::SSLContext.new
       ssl_context.ciphers = @ciphers
@@ -186,7 +181,9 @@ opts.each do |opt, arg|
   end
 end
 
-unless ARGV.length >= 2
+if options.keys.length <= 2
+  p ARGV
+  p options
   puts USAGE
   exit 0
 end
@@ -195,6 +192,11 @@ if options[:server].empty? || options[:port].empty?
   $stderr.puts 'Missing required fields'
   puts USAGE
   exit 0
+end
+
+trap("INT") do
+  puts "Exiting..."
+  exit
 end
 
 scanner = Scanner.new(options)
