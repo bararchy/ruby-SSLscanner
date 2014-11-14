@@ -36,8 +36,8 @@ class Scanner
     def ssl_scan
 
         # Index by color
-        printf "\nStarting the scan, the results will be presented by the following colors [%s / %s / %s]\n\n" % ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
-        printf "%-15s %-15s %-19s %-12s %s\n" % ["", "Version", "Cipher", " Bits", "Vulnerability"]
+        printf "\nScanning, results will be presented by the following colors [%s / %s / %s]\n\n" % ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
+        printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
         
         # fork do 
         #     '-\|/'.each_char.cycle { |char| print char; sleep 0.5; print "\r"}
@@ -163,22 +163,30 @@ class Scanner
         else
             bits = "#{cipher_bits}".colorize(:green)
         end
-        if protocol == SSLV3 && cipher_name.match(/RC/i).to_s == ""
-            return "Server supports: %-22s %-40s %-10s %s\n"%[ssl_version, cipher, bits, "  <= POODLE (CVE-2014-3566)".colorize(:red)]
-            #poodle =  "Server Supports: #{ssl_version} #{cipher} #{bits}", " <= POODLE (CVE-2014-3566)".colorize(:red)
-            #return poodle.join("")
+
+        return detect_vulnerabilites(ssl_version, cipher, bits)
+    end
+
+    def detect_vulnerabilites(ssl_version, cipher, bits)
+
+        if ssl_version.match(/SSLv3/).to_s != "" && cipher.match(/RC/i).to_s == ""
+            return "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, "     POODLE (CVE-2014-3566)".colorize(:red)]
+        elsif cipher.match(/RC2/i)
+            return "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, "     Chosen-plaintext attack".colorize(:red)]
+        elsif cipher.match(/EXP/i)
+            return "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, "     Weak EXPORT based cipher".colorize(:red)]
+        #elsif cipher_name.match(/(?<!3)DES/i)   
         else
-            return "Server supports: %-22s %-40s %-10s\n"%[ssl_version, cipher, bits]
-            return "Server Supports: #{ssl_version} #{cipher} #{bits}"
+            return "Server supports: %-22s %-42s %-10s\n"%[ssl_version, cipher, bits]
         end
     end
 
-  def initialize(options = {})
-    @server     = options[:server]
-    @port       = options[:port]
-    @debug      = options[:debug]
-    @check_cert = options[:check_cert]
-  end
+    def initialize(options = {})
+        @server     = options[:server]
+        @port       = options[:port]
+        @debug      = options[:debug]
+        @check_cert = options[:check_cert]
+    end
 end
 
 
@@ -199,7 +207,7 @@ opts.each do |opt, arg|
     options[:port] = arg.to_i
     when '-d'
     options[:debug] = true
-    when 'c'
+    when '-c'
     options[:check_cert] = true
     end
 end
