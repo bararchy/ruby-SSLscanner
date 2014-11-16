@@ -163,7 +163,7 @@ class Scanner
                  "key size: #{key_size}",
                  "public key:\r\n#{cert.public_key}"].join("\r\n")	
         return results
-    rescue Exception => e
+    rescue => e
       puts e
     ensure
       socket_destination.close if socket_destination
