@@ -126,50 +126,48 @@ class Scanner
     end
 
     def get_certificate_information
-        begin
-            ssl_context = OpenSSL::SSL::SSLContext.new
-            cert_store = OpenSSL::X509::Store.new
-            cert_store.set_default_paths
-            ssl_context.cert_store = cert_store
+      ssl_context = OpenSSL::SSL::SSLContext.new
+      cert_store = OpenSSL::X509::Store.new
+      cert_store.set_default_paths
+      ssl_context.cert_store = cert_store
 
-            tcp_socket = TCPSocket.new("#{@server}", @port)
-            socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
-            socket_destination.connect
+      tcp_socket = TCPSocket.new("#{@server}", @port)
+      socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
+      socket_destination.connect
 
-            cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
-            certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
-            key_size = OpenSSL::PKey::RSA.new(cert.public_key).to_text.match(/Public-Key: \((.*) bit/).to_a[1].strip.to_i
-            if key_size > 2000
-                key_size = key_size.to_s.colorize(:green)
-            elsif (1000..2000).to_a.index(key_size) != nil
-                key_size = key_size.to_s.colorize(:yellow)
-            elsif key_size < 1000
-                key_size = key_size.to_s.colorize(:red)
-            end
+      cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
+      certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
+      key_size = OpenSSL::PKey::RSA.new(cert.public_key).to_text.match(/Public-Key: \((.*) bit/).to_a[1].strip.to_i
+      if key_size > 2000
+        key_size = key_size.to_s.colorize(:green)
+      elsif (1000..2000).to_a.index(key_size) != nil
+        key_size = key_size.to_s.colorize(:yellow)
+      elsif key_size < 1000
+        key_size = key_size.to_s.colorize(:red)
+      end
 
-            if cert.signature_algorithm.match(/sha1/i)
-                algorithm = cert.signature_algorithm.colorize(:yellow)
-            else
-                algorithm = cert.signature_algorithm.colorize(:green)
-            end   
-            issuer = certprops.select { |name, data, type| name == "O" }.first[1]
+      if cert.signature_algorithm.match(/sha1/i)
+        algorithm = cert.signature_algorithm.colorize(:yellow)
+      else
+        algorithm = cert.signature_algorithm.colorize(:green)
+      end   
+      issuer = certprops.select { |name, data, type| name == "O" }.first[1]
 
-            results = ["\r\n== Certificate Information ==".bold,
-                       "valid: #{(socket_destination.verify_result == 0)}",
-                       "valid from: #{cert.not_before}",
-                       "valid until: #{cert.not_after}",
-                       "issuer: #{issuer}",
-                       "subject: #{cert.subject}",
-                       "algorithm: #{algorithm}",
-                       "key size: #{key_size}",
-                       "public key:\r\n#{cert.public_key}"].join("\r\n")	
-            return results
-        rescue Exception => e
-            puts e
-        ensure
-            socket_destination.close if socket_destination
-            tcp_socket.close         if tcp_socket
-        end
+      results = ["\r\n== Certificate Information ==".bold,
+                 "valid: #{(socket_destination.verify_result == 0)}",
+                 "valid from: #{cert.not_before}",
+                 "valid until: #{cert.not_after}",
+                 "issuer: #{issuer}",
+                 "subject: #{cert.subject}",
+                 "algorithm: #{algorithm}",
+                 "key size: #{key_size}",
+                 "public key:\r\n#{cert.public_key}"].join("\r\n")	
+      return results
+    rescue Exception => e
+      puts e
+    ensure
+      socket_destination.close if socket_destination
+      tcp_socket.close         if tcp_socket
     end
 
 
