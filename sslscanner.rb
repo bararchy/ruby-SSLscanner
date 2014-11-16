@@ -140,7 +140,7 @@ class Scanner
       key_size = OpenSSL::PKey::RSA.new(cert.public_key).to_text.match(/Public-Key: \((.*) bit/).to_a[1].strip.to_i
       if key_size > 2000
         key_size = key_size.to_s.colorize(:green)
-      elsif (1000..2000).to_a.index(key_size) != nil
+      elsif (1000..2000).include?(key_size)
         key_size = key_size.to_s.colorize(:yellow)
       elsif key_size < 1000
         key_size = key_size.to_s.colorize(:red)
