@@ -24,12 +24,12 @@ class Scanner
 
     PROTOCOLS     = [SSLV2, SSLV3, TLSV1, TLSV1_1, TLSV1_2]
     CIPHERS       = 'ALL::HIGH::MEDIUM::LOW::SSL23'
-    PROTOCOL_NAME = { 
-      SSLV2   => 'SSLv2',
-      SSLV3   => 'SSLv3',
-      TLSV1   => 'TLSv1',
-      TLSV1_1 => 'TLSv1.1',
-      TLSV1_2 => 'TLSv1.2'
+    PROTOCOL_COLOR_NAME = { 
+      SSLV2   => 'SSLv2'.colorize(:red),
+      SSLV3   => 'SSLv3'.colorize(:yellow),
+      TLSV1   => 'TLSv1'.bold,
+      TLSV1_1 => 'TLSv1.1'.bold,
+      TLSV1_2 => 'TLSv1.2'.bold
     }
 
 
@@ -171,39 +171,26 @@ class Scanner
 
 
     def parse(cipher_name, cipher_bits, protocol)
-        if protocol == SSLV2
-            ssl_version = "SSLv2".colorize(:red)
-        elsif protocol == SSLV3
-            ssl_version = "SSLv3".colorize(:yellow)
-        elsif protocol == TLSV1
-            ssl_version = "TLSv1".bold
-        elsif protocol == TLSV1_1
-            ssl_version = "TLSv1.1".bold
-        elsif protocol == TLSV1_2
-            ssl_version = "TLSv1.2".bold
-        end
+      ssl_version = PROTOCOL_COLOR_NAME[protocol]
+      cipher = case cipher_name
+              when /^(RC4|MD5)/
+                cipher_name.colorize(:yellow)
+              when /^RC2/
+                cipher_name.colorize(:red)
+              else
+                cipher_name.colorize(:gree)
+              end
 
-        if cipher_name.match(/RC4/i)
-            cipher = "#{cipher_name}".colorize(:yellow)
-        elsif cipher_name.match(/RC2/i)
-            cipher = "#{cipher_name}".colorize(:red)
-        elsif cipher_name.match(/MD5/i)
-            cipher = "#{cipher_name}".colorize(:yellow)
-        else
-            cipher = "#{cipher_name}".colorize(:green)
-        end
+      bits = case cipher_bits
+             when 48, 56
+               cipher_bits.to_s.colorize(:red)
+             when 112
+               cipher_bits.to_s.colorize(:yellow)
+             else
+               cipher_bits.to_s.colorize(:green)
+             end
 
-        if cipher_bits == 40
-            bits = "#{cipher_bits}".colorize(:red)
-        elsif cipher_bits == 56
-            bits = "#{cipher_bits}".colorize(:red)
-        elsif cipher_bits == 112
-            bits = "#{cipher_bits}".colorize(:yellow)           
-        else
-            bits = "#{cipher_bits}".colorize(:green)
-        end
-
-        return detect_vulnerabilites(ssl_version, cipher, bits)
+      detect_vulnerabilites(ssl_version, cipher, bits)
     end
 
     def detect_vulnerabilites(ssl_version, cipher, bits)
