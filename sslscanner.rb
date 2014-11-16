@@ -55,13 +55,11 @@ class Scanner
     end
 
     def to_text_file(data)
-        begin
-            open(@filename + '.txt', 'a') do |f|
-                f << data.uncolorize
-            end   
-        rescue Exception => e
-            puts "Error writing to file"
-        end
+      open(@filename + '.txt', 'a') do |f|
+        f << data.uncolorize
+      end   
+    rescue Errno, IOError => e
+      puts 'Unable to write to file: ' + e.message
     end
 
     def scan
