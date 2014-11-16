@@ -5,7 +5,7 @@ A simple and easy to use SSL Cipher scanner
 
 
 ```bash
-Usage: sslscanner.rb: [-s <server hostname/ip>] [-p <port>] [-d <debug>] [-c <certificate information>]
+Usage: sslscanner.rb: [-s <server hostname/ip>] [-p <port>] [-d <debug>] [-c <certificate information>] [-o <output file>] [-t <output file type>]
 ```
 TO-DO
 =============
