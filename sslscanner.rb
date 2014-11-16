@@ -32,6 +32,8 @@ class Scanner
       TLSV1_2 => 'TLSv1.2'.bold
     }
 
+    TRUTH_TABLE = { true => 'true'.colorize(:green), false => 'false'.colorize(:red) }
+
 
     def ssl_scan
 
@@ -44,9 +46,9 @@ class Scanner
             to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
         end
         scan
-        if @check_cert == true   
+        if @check_cert
             puts get_certificate_information
-            if @filename and @ftype == "text"
+            if @filename && @ftype == 'text'
                 to_text_file(get_certificate_information.uncolorize)
             end
         end
@@ -138,22 +140,21 @@ class Scanner
         cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
         certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
         key_size = OpenSSL::PKey::RSA.new(cert.public_key).to_text.match(/Public-Key: \((.*) bit/).to_a[1].strip.to_i
-        if key_size > 2000
-            key_size = key_size.to_s.colorize(:green)
-        elsif (1000..2000).include?(key_size)
-            key_size = key_size.to_s.colorize(:yellow)
-        elsif key_size < 1000
-            key_size = key_size.to_s.colorize(:red)
-        end
-        if cert.signature_algorithm.match(/sha1/i)
-            algorithm = cert.signature_algorithm.colorize(:yellow)
+        if key_size.between?(1000, 2000)
+          key_size = $1.colorize(:yellow)
+        elsif key_size > 2000
+          key_size = $1.colorize(:green)
         else
-            algorithm = cert.signature_algorithm.colorize(:green)
-        end   
+          key_size = $1.colorize(:red)
+        end
+
+        algorithm = cert.signature_algorithm.
+          colorize(if cert.signature_algorithm =~ /sha1/i then :yellow else :green end)
+
         issuer = certprops.select { |name, data, type| name == "O" }.first[1]
 
         results = ["\r\n== Certificate Information ==".bold,
-                 "valid: #{(socket_destination.verify_result == 0)}",
+                 'valid: ' + TRUTH_TABLE[(socket_destination.verify_result == 0)],
                  "valid from: #{cert.not_before}",
                  "valid until: #{cert.not_after}",
                  "issuer: #{issuer}",
