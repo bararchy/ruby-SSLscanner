@@ -82,16 +82,16 @@ class Scanner
                 if @debug
                     puts e.message
                     puts e.backtrace.join "\n"
-                    case p
-                    when SSLV2
+                    
+                    if p == SSLV2
                         puts "Server Don't Supports: SSLv2 #{c[0]} #{c[2]} bits"
-                    when SSLV3
+                    elsif p == SSLV3
                         puts "Server Don't Supports: SSLv3 #{c[0]} #{c[3]} bits"
-                    when TLSV1
+                    elsif p == TLSV1
                         puts "Server Don't Supports: TLSv1 #{c[0]} #{c[2]} bits"
-                    when TLSV1_1
+                    elsif p == TLSV1_1
                         puts "Server Don't Supports: TLSv1.1 #{c[0]} #{c[2]} bits"
-                    when TLSV1_2
+                    elsif p ==  TLSV1_2
                         puts "Server Don't Supports: TLSv1.2 #{c[0]} #{c[2]} bits"
                     end
                 end
@@ -115,7 +115,14 @@ class Scanner
 
     cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
     certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
-
+    key_size = OpenSSL::PKey::RSA.new(cert.public_key).to_text.match(/Public-Key: \((.*) bit/).to_a[1].strip.to_i
+    if key_size > 2000
+        key_size = key_size.to_s.colorize(:green)
+    elsif (1000..2000).to_a.index(key_size) != nil
+        key_size = key_size.to_s.colorize(:yellow)
+    elsif key_size < 1000
+        key_size = key_size.to_s.colorize(:red)
+    end         
     issuer = certprops.select { |name, data, type| name == "O" }.first[1]
 
     results = ["\r\n== Certificate Information ==".bold,
@@ -124,9 +131,12 @@ class Scanner
                "valid until: #{cert.not_after}",
                "issuer: #{issuer}",
                "subject: #{cert.subject}",
+               "algorithm: #{cert.signature_algorithm}",
+               "key size: #{key_size}",
                "public key:\r\n#{cert.public_key}"].join("\r\n")	
     return results
-    rescue
+    rescue Exception => e
+        puts e
     ensure
         socket_destination.close if socket_destination
         tcp_socket.close         if tcp_socket
@@ -160,6 +170,8 @@ class Scanner
             bits = "#{cipher_bits}".colorize(:red)
         elsif cipher_bits == 56
             bits = "#{cipher_bits}".colorize(:red)
+        elsif cipher_bits == 112
+            bits = "#{cipher_bits}".colorize(:yellow)           
         else
             bits = "#{cipher_bits}".colorize(:green)
         end
