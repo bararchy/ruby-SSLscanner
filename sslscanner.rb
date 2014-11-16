@@ -133,7 +133,7 @@ class Scanner
         cert_store.set_default_paths
         ssl_context.cert_store = cert_store
 
-        tcp_socket = TCPSocket.new("#{@server}", @port)
+        tcp_socket = TCPSocket.new(@server, @port)
         socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
         socket_destination.connect
 
