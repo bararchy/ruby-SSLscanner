@@ -12,16 +12,16 @@ TO-DO
 - More check for vulnerable cipher combinations
 - Checks for insecured TLS renogotiation
 - Checks for:
-  - [] Heartbleed
-  - [] Crime 
-  - [] BEAST
+  - [ ] Heartbleed
+  - [ ] Crime 
+  - [ ] BEAST
 - Checks for weak certificate key algorithms
 - Option to import hosts from file
 - Option to export data to file:
   - [x] txt
-  - [] pdf
-  - [] html
-  - [] csv
+  - [ ] pdf
+  - [ ] html
+  - [ ] csv
 - Some kind of a nice "loading bar" while results are geathred
 
 
