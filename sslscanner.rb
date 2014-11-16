@@ -100,7 +100,7 @@ class Scanner
                             to_text_file(result)
                         end
                     end
-                rescue Exception => e
+                rescue OpenSSL::SSL::SSLError => e
                     if @debug
                         puts e.message
                         puts e.backtrace.join "\n"                        
