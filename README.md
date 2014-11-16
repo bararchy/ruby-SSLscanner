@@ -20,6 +20,6 @@ TO-DO
 
 [Licensed under GPLv3](license.txt)
 
-Thanks to @ik5 (idokan@gmail.com) for helping "rubynize" the code.
-
-Thanks to Dor Lerner (dorl3rn3r@gmail.com) for beautifying the output.
+Special thanks to:
+* @ik5 (idokan@gmail.com).
+* Dor Lerner (dorl3rn3r@gmail.com).
