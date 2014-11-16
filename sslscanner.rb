@@ -100,7 +100,7 @@ class Scanner
                             to_text_file(result)
                         end
                     end
-                rescue => e
+                rescue OpenSSL::SSL::SSLError => e
                     if @debug
                         puts e.message
                         puts e.backtrace.join "\n"                        
@@ -117,7 +117,6 @@ class Scanner
                         end
                     end
 
-                    exit if e.kind_of? SystemExit
                 ensure
                     socket_destination.close if socket_destination
                     tcp_socket.close if tcp_socket
