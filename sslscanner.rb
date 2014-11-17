@@ -24,13 +24,15 @@ class Scanner
 
     PROTOCOLS     = [SSLV2, SSLV3, TLSV1, TLSV1_1, TLSV1_2]
     CIPHERS       = 'ALL::HIGH::MEDIUM::LOW::SSL23'
-    PROTOCOL_NAME = { 
-      SSLV2   => 'SSLv2',
-      SSLV3   => 'SSLv3',
-      TLSV1   => 'TLSv1',
-      TLSV1_1 => 'TLSv1.1',
-      TLSV1_2 => 'TLSv1.2'
+    PROTOCOL_COLOR_NAME = { 
+      SSLV2   => 'SSLv2'.colorize(:red),
+      SSLV3   => 'SSLv3'.colorize(:yellow),
+      TLSV1   => 'TLSv1'.bold,
+      TLSV1_1 => 'TLSv1.1'.bold,
+      TLSV1_2 => 'TLSv1.2'.bold
     }
+
+    TRUTH_TABLE = { true => 'true'.colorize(:green), false => 'false'.colorize(:red) }
 
 
     def ssl_scan
@@ -44,22 +46,20 @@ class Scanner
             to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
         end
         scan
-        if @check_cert == true   
+        if @check_cert
             puts get_certificate_information
-            if @filename and @ftype == "text"
+            if @filename && @ftype == 'text'
                 to_text_file(get_certificate_information.uncolorize)
             end
         end
     end
 
     def to_text_file(data)
-        begin
-            open(@filename + '.txt', 'a') do |f|
-                f << data.uncolorize
-            end   
-        rescue Exception => e
-            puts "Error writing to file"
-        end
+      open(@filename + '.txt', 'a') do |f|
+        f << data.uncolorize
+      end   
+    rescue Errno, IOError => e
+      puts 'Unable to write to file: ' + e.message
     end
 
     def scan
@@ -131,29 +131,28 @@ class Scanner
         cert_store.set_default_paths
         ssl_context.cert_store = cert_store
 
-        tcp_socket = TCPSocket.new("#{@server}", @port)
+        tcp_socket = TCPSocket.new(@server, @port)
         socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
         socket_destination.connect
 
         cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
         certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
         key_size = OpenSSL::PKey::RSA.new(cert.public_key).to_text.match(/Public-Key: \((.*) bit/).to_a[1].strip.to_i
-        if key_size > 2000
-            key_size = key_size.to_s.colorize(:green)
-        elsif (1000..2000).include?(key_size)
-            key_size = key_size.to_s.colorize(:yellow)
-        elsif key_size < 1000
-            key_size = key_size.to_s.colorize(:red)
-        end
-        if cert.signature_algorithm.match(/sha1/i)
-            algorithm = cert.signature_algorithm.colorize(:yellow)
+        if key_size.between?(1000, 2000)
+          key_size = $1.colorize(:yellow)
+        elsif key_size > 2000
+          key_size = $1.colorize(:green)
         else
-            algorithm = cert.signature_algorithm.colorize(:green)
-        end   
+          key_size = $1.colorize(:red)
+        end
+
+        algorithm = cert.signature_algorithm.
+          colorize(if cert.signature_algorithm =~ /sha1/i then :yellow else :green end)
+
         issuer = certprops.select { |name, data, type| name == "O" }.first[1]
 
         results = ["\r\n== Certificate Information ==".bold,
-                 "valid: #{(socket_destination.verify_result == 0)}",
+                 'valid: ' + TRUTH_TABLE[(socket_destination.verify_result == 0)],
                  "valid from: #{cert.not_before}",
                  "valid until: #{cert.not_after}",
                  "issuer: #{issuer}",
@@ -162,7 +161,7 @@ class Scanner
                  "key size: #{key_size}",
                  "public key:\r\n#{cert.public_key}"].join("\r\n")	
         return results
-    rescue Exception => e
+    rescue => e
       puts e
     ensure
       socket_destination.close if socket_destination
@@ -171,39 +170,26 @@ class Scanner
 
 
     def parse(cipher_name, cipher_bits, protocol)
-        if protocol == SSLV2
-            ssl_version = "SSLv2".colorize(:red)
-        elsif protocol == SSLV3
-            ssl_version = "SSLv3".colorize(:yellow)
-        elsif protocol == TLSV1
-            ssl_version = "TLSv1".bold
-        elsif protocol == TLSV1_1
-            ssl_version = "TLSv1.1".bold
-        elsif protocol == TLSV1_2
-            ssl_version = "TLSv1.2".bold
-        end
+      ssl_version = PROTOCOL_COLOR_NAME[protocol]
+      cipher = case cipher_name
+              when /^(RC4|MD5)/
+                cipher_name.colorize(:yellow)
+              when /^RC2/
+                cipher_name.colorize(:red)
+              else
+                cipher_name.colorize(:gree)
+              end
 
-        if cipher_name.match(/RC4/i)
-            cipher = "#{cipher_name}".colorize(:yellow)
-        elsif cipher_name.match(/RC2/i)
-            cipher = "#{cipher_name}".colorize(:red)
-        elsif cipher_name.match(/MD5/i)
-            cipher = "#{cipher_name}".colorize(:yellow)
-        else
-            cipher = "#{cipher_name}".colorize(:green)
-        end
+      bits = case cipher_bits
+             when 48, 56
+               cipher_bits.to_s.colorize(:red)
+             when 112
+               cipher_bits.to_s.colorize(:yellow)
+             else
+               cipher_bits.to_s.colorize(:green)
+             end
 
-        if cipher_bits == 40
-            bits = "#{cipher_bits}".colorize(:red)
-        elsif cipher_bits == 56
-            bits = "#{cipher_bits}".colorize(:red)
-        elsif cipher_bits == 112
-            bits = "#{cipher_bits}".colorize(:yellow)           
-        else
-            bits = "#{cipher_bits}".colorize(:green)
-        end
-
-        return detect_vulnerabilites(ssl_version, cipher, bits)
+      detect_vulnerabilites(ssl_version, cipher, bits)
     end
 
     def detect_vulnerabilites(ssl_version, cipher, bits)
