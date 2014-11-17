@@ -38,21 +38,42 @@ class Scanner
     def ssl_scan
 
         # Index by color
-        printf "\nScanning, results will be presented by the following colors [%s / %s / %s]\n\n" % ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
-        printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
-        
+        printf "Scanning, results will be presented by the following colors [%s / %s / %s]\n\n" % ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
+              
         # If save to file then... save to file
         if @filename and @ftype == "text"
             to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
         end
+        check_s_client
+        puts "Cipher Checks: ".bold
+        printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
         scan
         if @check_cert
             puts get_certificate_information
             if @filename && @ftype == 'text'
                 to_text_file(get_certificate_information.uncolorize)
+                to_text_file(check_s_client.uncolorize)
             end
         end
     end
+
+    def check_s_client
+        server = "Generel Settings: "
+        renegotiation = "Insecure Renegotiation".colorize(:red)
+        crime = "SSL Compression Enabled <= CRIME - CVE-2012-4929".colorize(:red)
+        results = %x(echo "q" | openssl s_client -host #{@server} -port #{@port} 2> /dev/null)
+        if results =~ /Secure Renegotiation IS supported/i
+            renegotiation = "Secured Renegotiation".colorize(:green)
+        end
+        if results =~ /Compression: NONE/
+            crime = "SSL Compression is disabled".colorize(:green)
+        end
+        puts "General Checks: ".bold
+        print server, renegotiation, "\r\n"
+        print server, crime, "\r\n\r\n"
+    end
+
+
 
     def to_text_file(data)
       open(@filename + '.txt', 'a') do |f|
@@ -100,7 +121,7 @@ class Scanner
                             to_text_file(result)
                         end
                     end
-                rescue OpenSSL::SSL::SSLError => e
+                rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET, SocketError => e
                     if @debug
                         puts e.message
                         puts e.backtrace.join "\n"                        
@@ -146,8 +167,7 @@ class Scanner
           key_size = $1.colorize(:red)
         end
 
-        algorithm = cert.signature_algorithm.
-          colorize(if cert.signature_algorithm =~ /sha1/i then :yellow else :green end)
+        algorithm = cert.signature_algorithm.colorize(if cert.signature_algorithm =~ /sha1/i then :yellow else :green end)
 
         issuer = certprops.select { |name, data, type| name == "O" }.first[1]
 
