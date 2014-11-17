@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-
+require 'rubygems'
 require 'colorize'
 require 'getoptlong'
 require 'openssl'
