@@ -137,7 +137,6 @@ class Scanner
                             puts "Server Don't Supports: TLSv1.2 #{c[0]} #{c[2]} bits"
                         end
                     end
-
                 ensure
                     socket_destination.close if socket_destination
                     tcp_socket.close if tcp_socket
