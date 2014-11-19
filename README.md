@@ -19,6 +19,7 @@ TO-DO
   - [x] Crime 
 - [x] Checks for weak certificate key algorithms
 - [x] Option to import hosts from file
+  - [ ] multithreading when scanning multiple hosts
 - [ ] Option to export data to file:
   - [x] txt
   - [ ] pdf
