@@ -10,12 +10,11 @@ Usage: sslscanner.rb: [-s <server hostname/ip>] [-p <port>] [-d <debug>] [-c <ce
 TO-DO
 =============
 - [ ] More check for vulnerable cipher combinations
-- [ ] Checks for insecured TLS renogotiation
+- [x] Checks for insecured TLS renogotiation
 - [ ] Checks for:
   - [ ] Heartbleed
-  - [ ] Crime 
-  - [ ] BEAST
-- [ ] Checks for weak certificate key algorithms
+  - [x] Crime 
+- [x] Checks for weak certificate key algorithms
 - [ ] Option to import hosts from file
 - [ ] Option to export data to file:
   - [x] txt
