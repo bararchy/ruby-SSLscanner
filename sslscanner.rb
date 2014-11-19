@@ -5,7 +5,7 @@ require 'getoptlong'
 require 'openssl'
 require 'socket'
 
-USAGE = "Usage: #{File.basename($0)}: [-s <server hostname/ip>] [-p <port>] [-d <debug>] [-c <certificate information>] [-o <output file>] [-t <output file type>]"
+USAGE = "Usage: #{File.basename($0)}: [-s <server hostname/ip>] [-p <port>] [-h <hosts file>] [-d <debug>] [-c <certificate information>] [-o <output file>] [-t <output file type>]"
 
 # SSL Scanner by Bar Hofesh (bararchy) bar.hofesh@gmail.com
 
