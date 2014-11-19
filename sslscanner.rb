@@ -39,29 +39,51 @@ class Scanner
 
         # Index by color
         printf "Scanning, results will be presented by the following colors [%s / %s / %s]\n\n" % ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
-              
-        # If save to file then... save to file
-        if @filename and @ftype == "text"
-            to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
-        end
-        check_s_client
-        puts "Cipher Checks: ".bold
-        printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
-        scan
-        if @check_cert
-            puts get_certificate_information
-            if @filename && @ftype == 'text'
-                to_text_file(get_certificate_information.uncolorize)
-                to_text_file(check_s_client.uncolorize)
+        
+        if @host_file.to_s == ""
+            if @filename and @ftype == "text"
+                to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
+            end
+            check_s_client(@server, @port)
+            puts "Cipher Checks: ".bold
+            printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
+            scan(@server, @port)
+            if @check_cert
+                puts get_certificate_information(@server, @port)
+                if @filename && @ftype == 'text'
+                    to_text_file(get_certificate_information(@server, @port).uncolorize)
+                    to_text_file(check_s_client(@server, @port).uncolorize)
+                end
+            end
+        else
+            if @filename and @ftype == "text"
+                to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
+            end
+            File.readlines("#{@host_file}").each do |line|
+                server, port = line.split(":")
+                port = port.to_i
+                puts "\r\nScanning #{server} on port #{port}".blue
+                check_s_client(server, port)
+                puts "Cipher Checks: ".bold
+                printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
+                scan(server, port)
+                if @check_cert
+                    puts get_certificate_information(server, port)
+                    if @filename && @ftype == 'text'
+                        to_text_file("\r\nScanning #{server} on port #{port}")
+                        to_text_file(get_certificate_information(server, port).uncolorize)
+                        to_text_file(check_s_client(server, port).uncolorize)
+                    end
+                end
             end
         end
     end
 
-    def check_s_client
+    def check_s_client(remote_server, port)
         server = "Generel Settings: "
         renegotiation = "Insecure Renegotiation".colorize(:red)
         crime = "SSL Compression Enabled <= CRIME - CVE-2012-4929".colorize(:red)
-        results = %x(echo "q" | openssl s_client -host #{@server} -port #{@port} 2> /dev/null)
+        results = %x(echo "QUIT" | openssl s_client -host #{remote_server} -port #{port} 2> /dev/null)
         if results =~ /Secure Renegotiation IS supported/i
             renegotiation = "Secured Renegotiation".colorize(:green)
         end
@@ -83,7 +105,7 @@ class Scanner
       puts 'Unable to write to file: ' + e.message
     end
 
-    def scan
+    def scan(server, port)
         p = 0
         c = []
         PROTOCOLS.each do |protocol|
@@ -99,7 +121,7 @@ class Scanner
                     ssl_context.options = protocol
                     ssl_context.ciphers = cipher[0].to_s
                     begin
-                        tcp_socket = TCPSocket.new("#{@server}", @port)
+                        tcp_socket = TCPSocket.new(server, port)
                     rescue => e
                         puts e.message
                         exit 1
@@ -145,13 +167,13 @@ class Scanner
         end
     end
 
-    def get_certificate_information
+    def get_certificate_information(server, port)
         ssl_context = OpenSSL::SSL::SSLContext.new
         cert_store = OpenSSL::X509::Store.new
         cert_store.set_default_paths
         ssl_context.cert_store = cert_store
 
-        tcp_socket = TCPSocket.new(@server, @port)
+        tcp_socket = TCPSocket.new(server, port)
         socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
         socket_destination.connect
 
@@ -231,6 +253,7 @@ class Scanner
         @check_cert = options[:check_cert]
         @filename   = options[:output]
         @ftype      = options[:file_type]
+        @host_file  = options[:host_file]
     end
 end
 
@@ -241,7 +264,8 @@ opts = GetoptLong.new(
     ['-d', GetoptLong::NO_ARGUMENT],
     ['-c', GetoptLong::NO_ARGUMENT],
     ['-o', GetoptLong::REQUIRED_ARGUMENT],
-    ['-t', GetoptLong::REQUIRED_ARGUMENT]
+    ['-t', GetoptLong::REQUIRED_ARGUMENT],
+    ['-h', GetoptLong::REQUIRED_ARGUMENT]
 )
 
 options = {debug: false, check_cert: false}
@@ -260,17 +284,18 @@ opts.each do |opt, arg|
     options[:output] = arg
     when '-t'
     options[:file_type] = arg
+    when '-h'
+    options[:host_file] = arg
+
     end
 end
 
-if options.keys.length <= 2
-    p ARGV
-    p options
+if options.keys.length <= 1
     puts USAGE
     exit 0
 end
 
-if options[:server].empty? || options[:port] == 0
+if options[:server].to_s == "" && options[:port].to_s == "" && options[:host_file].to_s == ""
     $stderr.puts 'Missing required fields'
     puts USAGE
     exit 0
