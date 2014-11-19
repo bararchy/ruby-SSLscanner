@@ -217,12 +217,14 @@ class Scanner
                 cipher_name.colorize(:yellow)
               when /^RC2/
                 cipher_name.colorize(:red)
+              when /^EXP/
+                cipher_name.colorize(:red)
               else
                 cipher_name.colorize(:gree)
               end
 
       bits = case cipher_bits
-             when 48, 56
+             when 48, 56, 40
                cipher_bits.to_s.colorize(:red)
              when 112
                cipher_bits.to_s.colorize(:yellow)
