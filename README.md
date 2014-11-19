@@ -15,7 +15,7 @@ TO-DO
   - [ ] Heartbleed
   - [x] Crime 
 - [x] Checks for weak certificate key algorithms
-- [ ] Option to import hosts from file
+- [x] Option to import hosts from file
 - [ ] Option to export data to file:
   - [x] txt
   - [ ] pdf
