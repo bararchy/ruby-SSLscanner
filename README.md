@@ -7,6 +7,9 @@ A simple and easy to use SSL Cipher scanner
 ```bash
 Usage: sslscanner.rb: [-s <server hostname/ip>] [-p <port>] [-d <debug>] [-c <certificate information>] [-o <output file>] [-t <output file type>]
 ```
+
+Added the '-h' option to allow importing a hosts file, the host file should have a server:port for each line.
+
 TO-DO
 =============
 - [ ] More check for vulnerable cipher combinations
