@@ -270,7 +270,7 @@ opts = GetoptLong.new(
     ['-h', GetoptLong::REQUIRED_ARGUMENT]
 )
 
-options = {debug: false, check_cert: false}
+options = {debug: false, check_cert: false, port: 443}
 
 opts.each do |opt, arg|
     case opt
