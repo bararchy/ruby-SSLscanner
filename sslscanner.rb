@@ -242,7 +242,7 @@ class Scanner
         elsif cipher.match(/RC2/i)
             return ssl_version, cipher, bits, "     Chosen-plaintext attack".colorize(:red)
         elsif cipher.match(/EXP/i)
-            return ssl_version, cipher, bits, "     Weak EXPORT based cipher".colorize(:red)   
+            return ssl_version, cipher, bits, "     FREAK (CVE-2015-0204)".colorize(:red)   
         else
             return ssl_version, cipher, bits, ''
         end
