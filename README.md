@@ -10,6 +10,11 @@ Usage: sslscanner.rb: [-s <server hostname/ip>] [-p <port>] [-d <debug>] [-c <ce
 
 Added the '-h' option to allow importing a hosts file, the host file should have a server:port for each line.
 
+![alt text][scan]
+
+[scan]: https://sc-cdn.scaleengine.net/i/9cfb397e1c8796848d0648ab0687aa50.png "Example Scan"
+
+
 TO-DO
 =============
 - [ ] More check for vulnerable cipher combinations
