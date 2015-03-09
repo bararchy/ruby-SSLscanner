@@ -129,14 +129,14 @@ class Scanner
                     socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
                     socket_destination.connect
                     if protocol == SSLV3            
-                        ssl_version, cipher, bits, vulnerability = parse(cipher[0], cipher[3], p)
+                        ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[3], p)
                         result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
                         printf result
                         if @filename && @ftype == "text"
                             to_text_file(result)
                         end
                     else
-                        ssl_version, cipher, bits, vulnerability = parse(cipher[0], cipher[2], p)
+                        ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[2], p)
                         result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
                         printf result
                         if @filename && @ftype == "text"
@@ -191,11 +191,15 @@ class Scanner
         algorithm = cert.signature_algorithm.colorize(if cert.signature_algorithm =~ /sha1/i then :yellow else :green end)
 
         issuer = certprops.select { |name, data, type| name == "O" }.first[1]
-
+        if Time.now.utc > cert.not_after
+            is_expired = cert.not_after.to_s.colorize(:red)
+        else 
+            is_expired = cert.not_after.to_s.colorize(:green)
+        end
         results = ["\r\n== Certificate Information ==".bold,
                  'valid: ' + TRUTH_TABLE[(socket_destination.verify_result == 0)],
                  "valid from: #{cert.not_before}",
-                 "valid until: #{cert.not_after}",
+                 "valid until: #{is_expired}",
                  "issuer: #{issuer}",
                  "subject: #{cert.subject}",
                  "algorithm: #{algorithm}",
@@ -210,7 +214,7 @@ class Scanner
     end
 
 
-    def parse(cipher_name, cipher_bits, protocol)
+    def result_parse(cipher_name, cipher_bits, protocol)
       ssl_version = PROTOCOL_COLOR_NAME[protocol]
       cipher = case cipher_name
               when /^(RC4|MD5)/
