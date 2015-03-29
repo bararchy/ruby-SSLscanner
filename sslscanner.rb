@@ -244,9 +244,11 @@ class Scanner
         if ssl_version.match(/SSLv3/).to_s != "" && cipher.match(/RC/i).to_s == ""
             return ssl_version, cipher, bits, "     POODLE (CVE-2014-3566)".colorize(:red)
         elsif cipher.match(/RC2/i)
-            return ssl_version, cipher, bits, "     Chosen-plaintext attack".colorize(:red)
+            return ssl_version, cipher, bits, "     Chosen-Plaintext Attack".colorize(:red)
         elsif cipher.match(/EXP/i)
-            return ssl_version, cipher, bits, "     FREAK (CVE-2015-0204)".colorize(:red)   
+            return ssl_version, cipher, bits, "     FREAK (CVE-2015-0204)".colorize(:red)
+        elsif cipher.match(/RC4/i)
+            return ssl_version, cipher, bits, "     Bar-Mitzvah Attack".colorize(:yellow)
         else
             return ssl_version, cipher, bits, ''
         end
