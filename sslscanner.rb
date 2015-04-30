@@ -143,7 +143,7 @@ class Scanner
                             to_text_file(result)
                         end
                     end
-                rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET, Errno::ETIMEDOUT, SocketError, Exception => e
+                rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET, Errno::ETIMEDOUT, SocketError => e
                     if @debug
                         puts e.message
                         puts e.backtrace.join "\n"                        
