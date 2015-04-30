@@ -143,7 +143,7 @@ class Scanner
                             to_text_file(result)
                         end
                     end
-                rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET, Errno::ETIMEDOUT, SocketError => e
+                rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET, Errno::ETIMEDOUT, SocketError, Exception => e
                     if @debug
                         puts e.message
                         puts e.backtrace.join "\n"                        
@@ -160,24 +160,23 @@ class Scanner
                         end
                     end
                 ensure
-                    socket_destination.close if socket_destination
-                    tcp_socket.close if tcp_socket
+                    socket_destination.close if socket_destination rescue nil
+                    tcp_socket.close if tcp_socket rescue nil
                 end
             end
         end
     end
 
     def get_certificate_information(server, port)
+      begin
         ssl_context = OpenSSL::SSL::SSLContext.new
         cert_store = OpenSSL::X509::Store.new
         cert_store.set_default_paths
-        ssl_context.cert_store = cert_store
-
+        ssl_context.cert_store = cert_store 
         tcp_socket = TCPSocket.new(server, port)
         socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
         socket_destination.connect
-
-        cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
+	    cert = OpenSSL::X509::Certificate.new(socket_destination.peer_cert)
         certprops = OpenSSL::X509::Name.new(cert.issuer).to_a
         key_size = OpenSSL::PKey::RSA.new(cert.public_key).to_text.match(/Public-Key: \((.*) bit/).to_a[1].strip.to_i
         if key_size.between?(1000, 2000)
@@ -206,11 +205,11 @@ class Scanner
                  "key size: #{key_size}",
                  "public key:\r\n#{cert.public_key}"].join("\r\n")	
         return results
-    rescue => e
-      puts e
+    rescue Exception => e
+      puts e.message
     ensure
-      socket_destination.close if socket_destination
-      tcp_socket.close         if tcp_socket
+      socket_destination.close if socket_destination rescue nil
+      tcp_socket.close         if tcp_socket rescue nil
     end
 
 
