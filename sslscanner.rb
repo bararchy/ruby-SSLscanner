@@ -1,9 +1,8 @@
 #!/usr/bin/env ruby
-require 'rubygems'
-require 'colorize'
-require 'getoptlong'
-require 'openssl'
-require 'socket'
+require "colorize"
+require "getoptlong"
+require "openssl"
+require "socket"
 
 USAGE = "Usage: #{File.basename($0)}: [-s <server hostname/ip>] [-p <port>] [-h <hosts file>] [-d <debug>] [-c <certificate information>] [-o <output file>] [-t <output file type>]"
 
@@ -36,7 +35,6 @@ class Scanner
 
 
     def ssl_scan
-
         # Index by color
         printf "Scanning, results will be presented by the following colors [%s / %s / %s]\n\n" % ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
         
@@ -143,7 +141,7 @@ class Scanner
                             to_text_file(result)
                         end
                     end
-                rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET, Errno::ETIMEDOUT, SocketError => e
+                rescue Exception => e
                     if @debug
                         puts e.message
                         puts e.backtrace.join "\n"                        
@@ -309,10 +307,14 @@ if options[:server].to_s == "" && options[:port].to_s == "" && options[:host_fil
     exit 0
 end
 
-trap("INT") do
-    puts "Exiting..."
-    exit 1
+pid = fork do 
+  scanner = Scanner.new(options)
+  scanner.ssl_scan
 end
 
-scanner = Scanner.new(options)
-scanner.ssl_scan
+Signal.trap("INT") do
+  puts "Terminating Scan..."
+  Process.kill("TERM", pid)
+  exit 0 
+end
+Process.waitpid(pid, 0)
