@@ -22,7 +22,7 @@ class Scanner
     TLSV1_2       = NO_SSLV2 + NO_SSLV3 + NO_TLSV1   + NO_TLSV1_1
 
     PROTOCOLS     = [SSLV2, SSLV3, TLSV1, TLSV1_1, TLSV1_2]
-    CIPHERS       = 'ALL::HIGH::MEDIUM::LOW::SSL23'
+    CIPHERS       = 'ALL::COMPLEMENTOFDEFAULT::COMPLEMENTOFALL'
     PROTOCOL_COLOR_NAME = { 
       SSLV2   => 'SSLv2'.colorize(:red),
       SSLV3   => 'SSLv3'.colorize(:yellow),
@@ -204,7 +204,7 @@ class Scanner
                  "public key:\r\n#{cert.public_key}"].join("\r\n")	
         return results
       rescue Exception => e
-        puts e.message
+        puts e.message, e.backtrace
       ensure
         socket_destination.close if socket_destination rescue nil
         tcp_socket.close         if tcp_socket rescue nil
