@@ -36,7 +36,7 @@ TO-DO
   - [ ] html
   - [ ] csv
 - [ ] Some kind of a nice "loading bar" while results are geathred
-- [ ] Using OptionParser or [Cli.k](https://github.com/rubyworks/clik)
+- [ ] Use OptionParser or [Cli.k](https://github.com/rubyworks/clik) for command line options
 
 
 [Licensed under GPLv3](license.txt)
