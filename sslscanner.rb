@@ -3,6 +3,7 @@ require "colorize"
 require "getoptlong"
 require "openssl"
 require "socket"
+require "webrick"
 
 USAGE = "Usage: #{File.basename($0)}: [-s <server hostname/ip>] [-p <port>] [-h <hosts file>] [-d <debug>] [-c <certificate information>] [-o <output file>] [-t <output file type>]"
 
@@ -119,13 +120,17 @@ class Scanner
                     ssl_context.options = protocol
                     ssl_context.ciphers = cipher[0].to_s
                     begin
-                        tcp_socket = TCPSocket.new(server, port)
+                        tcp_socket = WEBrick::Utils.timeout(5){
+                          TCPSocket.new(server, port)
+                        }
                     rescue => e
                         puts e.message
                         exit 1
                     end
                     socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
-                    socket_destination.connect
+                    WEBrick::Utils.timeout(5) {
+                      socket_destination.connect
+                    }
                     if protocol == SSLV3            
                         ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[3], p)
                         result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
