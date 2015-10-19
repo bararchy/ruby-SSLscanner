@@ -4,8 +4,7 @@ require "getoptlong"
 require "openssl"
 require "socket"
 require "webrick"
-
-USAGE = "Usage: #{File.basename($0)}: [-s <server hostname/ip>] [-p <port>] [-h <hosts file>] [-d <debug>] [-c <certificate information>] [-o <output file>] [-t <output file type>]"
+require 'optparse'
 
 # SSL Scanner by Bar Hofesh (bararchy) bar.hofesh@gmail.com
 
@@ -268,51 +267,49 @@ class Scanner
     end
 end
 
+options = {:debug => false, :check_cert => false}
 
-opts = GetoptLong.new(
-    ['-s', GetoptLong::REQUIRED_ARGUMENT],
-    ['-p', GetoptLong::REQUIRED_ARGUMENT],
-    ['-d', GetoptLong::NO_ARGUMENT],
-    ['-c', GetoptLong::NO_ARGUMENT],
-    ['-o', GetoptLong::REQUIRED_ARGUMENT],
-    ['-t', GetoptLong::REQUIRED_ARGUMENT],
-    ['-h', GetoptLong::REQUIRED_ARGUMENT]
-)
+parser = OptionParser.new do |opts|
+    opts.banner = "Usage: #{File.basename($0)} [options]"
 
-options = {debug: false, check_cert: false, port: 443}
+    opts.on('-s', '--server server', 'Server to scan') do |server|
+        options[:server] = server
+    end
 
-opts.each do |opt, arg|
-    case opt
-    when '-s'
-    options[:server] = arg
-    when '-p'
-    options[:port] = arg.to_i
-    when '-d'
-    options[:debug] = true
-    when '-c'
-    options[:check_cert] = true
-    when '-o'
-    options[:output] = arg
-    when '-t'
-    options[:file_type] = arg
-    when '-h'
-    options[:host_file] = arg
+    opts.on('-p', '--port port', 'Port to scan') do |port|
+        options[:port] = port
+    end
 
+    opts.on('-d', '--debug', 'Debug mode') do
+        options[:debug] = true
+    end
+
+    opts.on('-c', '--certificate', 'Displays certificate information') do
+        options[:check_cert] = true
+    end
+
+    opts.on('-o', '--output filename', 'File to save results in') do |filename|
+        options[:output] = filename
+    end
+
+    opts.on('-h', '--help', 'Displays Help') do
+        puts opts
+        exit
     end
 end
 
-if options.keys.length <= 1
-    puts USAGE
-    exit 0
+parser.parse!
+
+unless options[:server]
+    puts "Missing -s/--server argument !".colorize(:red)
+    exit
+end
+unless options[:port]
+    puts "Missing -p/--port argument !".colorize(:red)
+    exit
 end
 
-if options[:server].to_s == "" && options[:port].to_s == "" && options[:host_file].to_s == ""
-    $stderr.puts 'Missing required fields'
-    puts USAGE
-    exit 0
-end
-
-pid = fork do 
+pid = fork do
   scanner = Scanner.new(options)
   scanner.ssl_scan
 end
@@ -320,6 +317,6 @@ end
 Signal.trap("INT") do
   puts "Terminating Scan..."
   Process.kill("TERM", pid)
-  exit 0 
+  exit 0
 end
 Process.waitpid(pid, 0)
