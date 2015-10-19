@@ -3,6 +3,25 @@ ruby-SSLscanner
 
 A simple and easy to use SSL Cipher scanner
 
+Dependencies
+--------------
+Ruby 2.0.0 or Higher (ruby 1.9.0 should also work)
+
+Colorize gem (gem install colorize)
+
+Installation
+--------------
+Clone the repo
+
+1) ``` git clone https://github.com/bararchy/ruby-SSLscanner.git ```
+
+2) ``` cd ruby-SSLscanner ```
+
+3) ``` ruby sslscanner.rb -s google.com -p 443 -c ```
+
+
+Usage
+-------------
 
 ```bash
 Usage: sslscanner.rb: [-s <server hostname/ip>] [-p <port>] [-d <debug>] [-c <certificate information>] [-o <output file>] [-t <output file type>]
@@ -10,8 +29,7 @@ Usage: sslscanner.rb: [-s <server hostname/ip>] [-p <port>] [-d <debug>] [-c <ce
 
 Added the '-h' option to allow importing a hosts file, the host file should have a server:port for each line.
 
-Usage
--------------
+
 ./sslscanner.rb -s google.com -p 443 -c
 
 Output:
