@@ -7,7 +7,7 @@ Dependencies
 --------------
 Ruby 2.0.0 or Higher (ruby 1.9.0 should also work)
 
-Colorize gem (gem install colorize)
+Colorize gem
 
 Installation
 --------------
@@ -17,7 +17,9 @@ Clone the repo
 
 2) ``` cd ruby-SSLscanner ```
 
-3) ``` ruby sslscanner.rb -s google.com -p 443 -c ```
+3) ``` gem install colorize ```
+
+4) ``` ruby sslscanner.rb -s google.com -p 443 -c ```
 
 
 Usage
