@@ -21,51 +21,71 @@ require 'rubygems'
 
 options = {}
 
-OptionParser.new do |opts|
-  opts.banner = "Usage: #{File.basename($0)} [options]"
+begin
+  OptionParser.new do |opts|
+    opts.banner = "Usage: #{File.basename($0)} [options]"
 
-  opts.on('-s', '--server server', 'Server to scan') do |server|
-    options[:server] = server
-  end
+    opts.on('-s', '--server server', 'Server to scan') do |server|
+      options[:server] = server
+    end
 
-  opts.on('-p', '--port port', 'Port to scan') do |port|
-    options[:port] = port
-  end
+    opts.on('-p', '--port port', 'Port to scan') do |port|
+      options[:port] = port
+    end
 
-  opts.on('-d', '--debug', 'Debug mode') do
-    options[:debug] = true
-  end
+    opts.on('-d', '--debug', 'Debug mode') do
+      options[:debug] = true
+    end
 
-  opts.on('-c', '--certificate', 'Displays certificate information') do
-    options[:check_cert] = true
-  end
+    opts.on('-c', '--certificate', 'Displays certificate information') do
+      options[:check_cert] = true
+    end
 
-  opts.on('-o', '--output filename', 'File to save results in') do |filename|
-    options[:output] = filename
-  end
+    opts.on('-o', '--output filename', 'File to save results in') do |filename|
+      options[:output] = filename
+    end
 
-  opts.on('-t', '--type filetype', 'Type file: txt, pdf, html') do |filetype|
-    options[:file_type] = filetype
-  end
+    opts.on('-t', '--type filetype', 'Type file: txt, pdf, html') do |filetype|
+      options[:file_type] = filetype
+    end
 
-  opts.on('-v', '--version', 'Version number') do
-    puts "ScanSSL version: #{ScanSSL::VERSION}"
-    exit
-  end
+    opts.on('-v', '--version', 'Version number') do
+      puts "ScanSSL version: #{ScanSSL::VERSION}"
+      exit
+    end
 
-  opts.on('-h', '--help', 'Displays Help') do
-    puts opts
-    exit
-  end
-end.parse!
+    opts.on('-h', '--help', 'Displays Help') do
+      puts opts
+      exit
+    end
+  end.parse!
+rescue OptionParser::MissingArgument
+  puts "Wrong argument. Check: -h for help."
+
+rescue OptionParser::InvalidOption
+  puts "Invalid argument. Check: -h for help."
+end
 
 unless options[:server]
   puts "Missing -s/--server argument!"
   puts "Try -h"
   exit
 end
+
 unless options[:port]
   puts "Missing -p/--port argument!"
   puts "Try -h"
   exit
 end
+
+pid = fork do
+  execute = ScanSSL::Command.new(options)
+  execute.call
+end
+
+Signal.trap("INT") do
+  puts "Terminating Scan..."
+  Process.kill("TERM", pid)
+  exit 0
+end
+Process.waitpid(pid, 0)
