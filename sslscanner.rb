@@ -35,7 +35,7 @@ class Scanner
 
     PROTOCOLS     = [SSLV2, SSLV3, TLSV1, TLSV1_1, TLSV1_2]
     CIPHERS       = 'ALL::COMPLEMENTOFDEFAULT::COMPLEMENTOFALL'
-    PROTOCOL_COLOR_NAME = { 
+    PROTOCOL_COLOR_NAME = {
       SSLV2   => 'SSLv2'.colorize(:red),
       SSLV3   => 'SSLv3'.colorize(:yellow),
       TLSV1   => 'TLSv1'.bold,
@@ -48,8 +48,7 @@ class Scanner
 
     def ssl_scan
       # Index by color
-      printf "Scanning, results will be presented by the following colors [%s / %s / %s]\n\n" %
-      ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
+      printf "Scanning, results will be presented by the following colors [%s / %s / %s]\n\n" % ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
       if @host_file.to_s == ""
         if @filename and @ftype == "txt"
           to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
@@ -119,7 +118,7 @@ class Scanner
     def to_text_file(data)
       open(@filename + '.txt', 'a') do |f|
         f << data.uncolorize
-      end   
+      end
     rescue Errno, IOError => e
       puts 'Unable to write to file: ' + e.message
     end
@@ -148,7 +147,7 @@ class Scanner
               WEBrick::Utils.timeout(20) {
                 socket_destination.connect
               }
-              if protocol == SSLV3            
+              if protocol == SSLV3
                 ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[3], protocol)
                 result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
                 printf result
@@ -166,7 +165,7 @@ class Scanner
             rescue Exception => e
               if @debug
                 puts e.message
-                puts e.backtrace.join "\n"                        
+                puts e.backtrace.join "\n"
                 if protocol == SSLV2
                   puts "Server Don't Supports: SSLv2 #{c[0]} #{c[2]} bits"
                 elsif protocol == SSLV3
@@ -187,7 +186,7 @@ class Scanner
         end
       end
 
-      begin  
+      begin
         @threads.map(&:join)
       rescue Interrupt
       end
@@ -198,7 +197,7 @@ class Scanner
         ssl_context = OpenSSL::SSL::SSLContext.new
         cert_store = OpenSSL::X509::Store.new
         cert_store.set_default_paths
-        ssl_context.cert_store = cert_store 
+        ssl_context.cert_store = cert_store
         tcp_socket = TCPSocket.new(server, port)
         socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
         socket_destination.connect
@@ -229,7 +228,7 @@ class Scanner
                  "subject: #{cert.subject}",
                  "algorithm: #{algorithm}",
                  "key size: #{key_size}",
-                 "public key:\r\n#{cert.public_key}"].join("\r\n")	
+                 "public key:\r\n#{cert.public_key}"].join("\r\n")
         return results
       rescue Exception => e
         puts e.message, e.backtrace
