@@ -48,7 +48,7 @@ TO-DO
 - [x] Checks for insecured TLS renogotiation
 - [ ] Checks for:
   - [ ] Heartbleed
-  - [x] Crime 
+  - [x] Crime
 - [x] Checks for weak certificate key algorithms
 - [x] Option to import hosts from file
   - [ ] multithreading when scanning multiple hosts
@@ -66,4 +66,5 @@ TO-DO
 Special thanks to:
 * @ik5 (idokan@gmail.com).
 * Dor Lerner (dorl3rn3r@gmail.com).
-* @elichai 
+* @elichai
+* @wolfedale "Pawel"
