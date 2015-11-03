@@ -57,7 +57,7 @@ TO-DO
   - [ ] csv
 - [ ] Some kind of a nice "loading bar" while results are geathred
 - [x] Use OptionParser or [Cli.k](https://github.com/rubyworks/clik) for command line options
-
+- [x] Multithreading on Protocols (speeds scan 4 times)
 
 [Licensed under GPLv3](license.txt)
 
