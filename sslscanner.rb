@@ -121,7 +121,6 @@ class Scanner
           ssl_context = OpenSSL::SSL::SSLContext.new
           ssl_context.ciphers = CIPHERS
           ssl_context.options = protocol
-
           @threads << Thread.new do
             ssl_context.ciphers.each do |cipher|
             begin
