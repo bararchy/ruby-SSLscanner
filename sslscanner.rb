@@ -177,7 +177,12 @@ class Scanner
             end
           end
         end
-      @threads.map(&:join)
+        
+      begin  
+        @threads.map(&:join)
+      rescue Interrupt
+      end
+
     end
 
     def get_certificate_information(server, port)
