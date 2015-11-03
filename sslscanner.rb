@@ -5,10 +5,22 @@ require "openssl"
 require "socket"
 require "webrick"
 require 'optparse'
+require 'prawn'
 
 # SSL Scanner by Bar Hofesh (bararchy) bar.hofesh@gmail.com
 
 class Scanner
+    def initialize(options = {})
+        @server     = options[:server]
+        @port       = options[:port]
+        @debug      = options[:debug]
+        @check_cert = options[:check_cert]
+        @filename   = options[:output]
+        @ftype      = options[:file_type]
+        @host_file  = options[:host_file]
+        @threads = []
+    end
+
     NO_SSLV2      = 16777216
     NO_SSLV3      = 33554432
     NO_TLSV1      = 67108864
@@ -35,46 +47,55 @@ class Scanner
 
 
     def ssl_scan
-        # Index by color
-        printf "Scanning, results will be presented by the following colors [%s / %s / %s]\n\n" % ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
-        
-        if @host_file.to_s == ""
-            if @filename and @ftype == "text"
-                to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
-            end
-            check_s_client(@server, @port)
-            puts "Cipher Checks: ".bold
-            printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
-            scan(@server, @port)
-            if @check_cert
-                puts get_certificate_information(@server, @port)
-                if @filename && @ftype == 'text'
-                    to_text_file(get_certificate_information(@server, @port).uncolorize)
-                    to_text_file(check_s_client(@server, @port).uncolorize)
-                end
-            end
-        else
-            if @filename and @ftype == "text"
-                to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
-            end
-            File.readlines("#{@host_file}").each do |line|
-                server, port = line.split(":")
-                port = port.to_i
-                puts "\r\nScanning #{server} on port #{port}".blue
-                check_s_client(server, port)
-                puts "Cipher Checks: ".bold
-                printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
-                scan(server, port)
-                if @check_cert
-                    puts get_certificate_information(server, port)
-                    if @filename && @ftype == 'text'
-                        to_text_file("\r\nScanning #{server} on port #{port}")
-                        to_text_file(get_certificate_information(server, port).uncolorize)
-                        to_text_file(check_s_client(server, port).uncolorize)
-                    end
-                end
-            end
+      # Index by color
+      printf "Scanning, results will be presented by the following colors [%s / %s / %s]\n\n" %
+      ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
+      if @host_file.to_s == ""
+        if @filename and @ftype == "txt"
+          to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
         end
+        if @filename and @ftype == "pdf"
+          fileSavePDF("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
+        end
+        check_s_client(@server, @port)
+        puts "Cipher Checks: ".bold
+        printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
+        scan(@server, @port)
+        if @check_cert
+          puts get_certificate_information(@server, @port)
+          if @filename && @ftype == 'text'
+            to_text_file(get_certificate_information(@server, @port).uncolorize)
+            to_text_file(check_s_client(@server, @port).uncolorize)
+          end
+        end
+        else
+          if @filename and @ftype == "text"
+            to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
+          end
+          File.readlines("#{@host_file}").each do |line|
+          server, port = line.split(":")
+          port = port.to_i
+          puts "\r\nScanning #{server} on port #{port}".blue
+          check_s_client(server, port)
+          puts "Cipher Checks: ".bold
+          printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
+          scan(server, port)
+          if @check_cert
+            puts get_certificate_information(server, port)
+            if @filename && @ftype == 'text'
+              to_text_file("\r\nScanning #{server} on port #{port}")
+              to_text_file(get_certificate_information(server, port).uncolorize)
+              to_text_file(check_s_client(server, port).uncolorize)
+            end
+          end
+        end
+      end
+    end
+
+    def fileSavePDF(data)
+      Prawn::Document.generate(@filename) do
+        text "Hello World!"
+      end
     end
 
     def check_s_client(remote_server, port)
@@ -104,69 +125,72 @@ class Scanner
     end
 
     def scan(server, port)
-        p = 0
-        c = []
+      c = []
         PROTOCOLS.each do |protocol|
-            p = protocol
-            ssl_context = OpenSSL::SSL::SSLContext.new
-            ssl_context.ciphers = CIPHERS
-            ssl_context.options = protocol
-
+          ssl_context = OpenSSL::SSL::SSLContext.new
+          ssl_context.ciphers = CIPHERS
+          ssl_context.options = protocol
+          @threads << Thread.new do
             ssl_context.ciphers.each do |cipher|
-                begin
-                    c = cipher
-                    ssl_context = OpenSSL::SSL::SSLContext.new
-                    ssl_context.options = protocol
-                    ssl_context.ciphers = cipher[0].to_s
-                    begin
-                        tcp_socket = WEBrick::Utils.timeout(5){
-                          TCPSocket.new(server, port)
-                        }
-                    rescue => e
-                        puts e.message
-                        exit 1
-                    end
-                    socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
-                    WEBrick::Utils.timeout(5) {
-                      socket_destination.connect
-                    }
-                    if protocol == SSLV3            
-                        ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[3], p)
-                        result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
-                        printf result
-                        if @filename && @ftype == "text"
-                            to_text_file(result)
-                        end
-                    else
-                        ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[2], p)
-                        result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
-                        printf result
-                        if @filename && @ftype == "text"
-                            to_text_file(result)
-                        end
-                    end
-                rescue Exception => e
-                    if @debug
-                        puts e.message
-                        puts e.backtrace.join "\n"                        
-                        if p == SSLV2
-                            puts "Server Don't Supports: SSLv2 #{c[0]} #{c[2]} bits"
-                        elsif p == SSLV3
-                            puts "Server Don't Supports: SSLv3 #{c[0]} #{c[3]} bits"
-                        elsif p == TLSV1
-                            puts "Server Don't Supports: TLSv1 #{c[0]} #{c[2]} bits"
-                        elsif p == TLSV1_1
-                            puts "Server Don't Supports: TLSv1.1 #{c[0]} #{c[2]} bits"
-                        elsif p ==  TLSV1_2
-                            puts "Server Don't Supports: TLSv1.2 #{c[0]} #{c[2]} bits"
-                        end
-                    end
-                ensure
-                    socket_destination.close if socket_destination rescue nil
-                    tcp_socket.close if tcp_socket rescue nil
+            begin
+              ssl_context = OpenSSL::SSL::SSLContext.new
+              ssl_context.options = protocol
+              ssl_context.ciphers = cipher[0].to_s
+              begin
+                tcp_socket = WEBrick::Utils.timeout(20){
+                  TCPSocket.new(server, port)
+                }
+              rescue => e
+                puts e.message
+                exit 1
+              end
+              socket_destination = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
+              WEBrick::Utils.timeout(20) {
+                socket_destination.connect
+              }
+              if protocol == SSLV3            
+                ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[3], protocol)
+                result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
+                printf result
+                if @filename && @ftype == "text"
+                  to_text_file(result)
                 end
+                else
+                  ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[2], protocol)
+                  result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
+                  printf result
+                if @filename && @ftype == "text"
+                  to_text_file(result)
+                end
+              end
+            rescue Exception => e
+              if @debug
+                puts e.message
+                puts e.backtrace.join "\n"                        
+                if protocol == SSLV2
+                  puts "Server Don't Supports: SSLv2 #{c[0]} #{c[2]} bits"
+                elsif protocol == SSLV3
+                  puts "Server Don't Supports: SSLv3 #{c[0]} #{c[3]} bits"
+                elsif protocol == TLSV1
+                  puts "Server Don't Supports: TLSv1 #{c[0]} #{c[2]} bits"
+                elsif protocol == TLSV1_1
+                  puts "Server Don't Supports: TLSv1.1 #{c[0]} #{c[2]} bits"
+                elsif protocol == TLSV1_2
+                  puts "Server Don't Supports: TLSv1.2 #{c[0]} #{c[2]} bits"
+                end
+              end
+            ensure
+              socket_destination.close if socket_destination rescue nil
+              tcp_socket.close if tcp_socket rescue nil
             end
+          end
         end
+      end
+
+      begin  
+        @threads.map(&:join)
+      rescue Interrupt
+      end
     end
 
     def get_certificate_information(server, port)
@@ -255,16 +279,6 @@ class Scanner
             return ssl_version, cipher, bits, ''
         end
     end
-
-    def initialize(options = {})
-        @server     = options[:server]
-        @port       = options[:port]
-        @debug      = options[:debug]
-        @check_cert = options[:check_cert]
-        @filename   = options[:output]
-        @ftype      = options[:file_type]
-        @host_file  = options[:host_file]
-    end
 end
 
 options = {:debug => false, :check_cert => false}
@@ -290,6 +304,10 @@ parser = OptionParser.new do |opts|
 
     opts.on('-o', '--output filename', 'File to save results in') do |filename|
         options[:output] = filename
+    end
+
+    opts.on('-t', '--type filetype', 'Type file: txt, pdf, html') do |filetype|
+      options[:file_type] = filetype
     end
 
     opts.on('-h', '--help', 'Displays Help') do

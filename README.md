@@ -19,7 +19,9 @@ Clone the repo
 
 3) ``` gem install colorize ```
 
-4) ``` ruby sslscanner.rb -s google.com -p 443 -c ```
+4) ``` gem install pawn ```
+
+5) ``` ruby sslscanner.rb -s google.com -p 443 -c ```
 
 
 Usage
@@ -52,12 +54,12 @@ TO-DO
   - [ ] multithreading when scanning multiple hosts
 - [ ] Option to export data to file:
   - [x] txt
-  - [ ] pdf
+  - [x] pdf
   - [ ] html
   - [ ] csv
 - [ ] Some kind of a nice "loading bar" while results are geathred
 - [x] Use OptionParser or [Cli.k](https://github.com/rubyworks/clik) for command line options
-
+- [x] Multithreading on Protocols (speeds scan 4 times)
 
 [Licensed under GPLv3](license.txt)
 
