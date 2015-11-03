@@ -61,10 +61,10 @@ begin
   end.parse!
 
 rescue OptionParser::MissingArgument
-  puts "Wrong argument. Check: -h for help."
+  puts "Wrong argument. Check: -h for more help."
 
 rescue OptionParser::InvalidOption
-  puts "Invalid argument. Check: -h for help."
+  puts "Invalid argument. Check: -h for more help."
 end
 
 unless options[:server]
@@ -89,4 +89,5 @@ Signal.trap("INT") do
   Process.kill("TERM", pid)
   exit 0
 end
+
 Process.waitpid(pid, 0)

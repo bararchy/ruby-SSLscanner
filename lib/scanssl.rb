@@ -24,16 +24,14 @@ module ScanSSL
     end
 
     def call
-      # Here we are going to call some methods.
-      puts @server
-      puts @port
-     
-      # This is just for test :-)
-      PROTOCOLS.each { |x| puts x }
-
       # In this method I guess we can simply have a kind
       # of queue for all commands. We can call methods,
       # get the output and send to colorizeOutput :-)
+
+      # Get Certiticate Information
+      getCertificateInformation = ScanSSL::CertInfo.new(@server, @port)
+      colorizeOutput(getCertificateInformation.get_certificate_information)
+
     end
 
     def colorizeOutput(output)
@@ -41,6 +39,7 @@ module ScanSSL
       # something (using return), and here we are going to
       # create a nice output using those data
       puts "Here we are going to colorize the output."
+      puts output
     end
   end
 end
