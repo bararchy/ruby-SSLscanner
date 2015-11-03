@@ -5,6 +5,7 @@ require "openssl"
 require "socket"
 require "webrick"
 require 'optparse'
+require 'prawn'
 
 # SSL Scanner by Bar Hofesh (bararchy) bar.hofesh@gmail.com
 
@@ -46,47 +47,55 @@ class Scanner
 
 
     def ssl_scan
-        # Index by color
-        printf "Scanning, results will be presented by the following colors [%s / %s / %s]\n\n" %
-               ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
-        
-        if @host_file.to_s == ""
-            if @filename and @ftype == "text"
-                to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
-            end
-            check_s_client(@server, @port)
-            puts "Cipher Checks: ".bold
-            printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
-            scan(@server, @port)
-            if @check_cert
-                puts get_certificate_information(@server, @port)
-                if @filename && @ftype == 'text'
-                    to_text_file(get_certificate_information(@server, @port).uncolorize)
-                    to_text_file(check_s_client(@server, @port).uncolorize)
-                end
-            end
-        else
-            if @filename and @ftype == "text"
-                to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
-            end
-            File.readlines("#{@host_file}").each do |line|
-                server, port = line.split(":")
-                port = port.to_i
-                puts "\r\nScanning #{server} on port #{port}".blue
-                check_s_client(server, port)
-                puts "Cipher Checks: ".bold
-                printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
-                scan(server, port)
-                if @check_cert
-                    puts get_certificate_information(server, port)
-                    if @filename && @ftype == 'text'
-                        to_text_file("\r\nScanning #{server} on port #{port}")
-                        to_text_file(get_certificate_information(server, port).uncolorize)
-                        to_text_file(check_s_client(server, port).uncolorize)
-                    end
-                end
-            end
+      # Index by color
+      printf "Scanning, results will be presented by the following colors [%s / %s / %s]\n\n" %
+      ["strong".colorize(:green), "weak".colorize(:yellow), "vulnerable".colorize(:red)]
+      if @host_file.to_s == ""
+        if @filename and @ftype == "txt"
+          to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
         end
+        if @filename and @ftype == "pdf"
+          fileSavePDF("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
+        end
+        check_s_client(@server, @port)
+        puts "Cipher Checks: ".bold
+        printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
+        scan(@server, @port)
+        if @check_cert
+          puts get_certificate_information(@server, @port)
+          if @filename && @ftype == 'text'
+            to_text_file(get_certificate_information(@server, @port).uncolorize)
+            to_text_file(check_s_client(@server, @port).uncolorize)
+          end
+        end
+        else
+          if @filename and @ftype == "text"
+            to_text_file("%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"])
+          end
+          File.readlines("#{@host_file}").each do |line|
+          server, port = line.split(":")
+          port = port.to_i
+          puts "\r\nScanning #{server} on port #{port}".blue
+          check_s_client(server, port)
+          puts "Cipher Checks: ".bold
+          printf "%-15s %-15s %-19s %-14s %s\n" % ["", "Version", "Cipher", "   Bits", "Vulnerability"]
+          scan(server, port)
+          if @check_cert
+            puts get_certificate_information(server, port)
+            if @filename && @ftype == 'text'
+              to_text_file("\r\nScanning #{server} on port #{port}")
+              to_text_file(get_certificate_information(server, port).uncolorize)
+              to_text_file(check_s_client(server, port).uncolorize)
+            end
+          end
+        end
+      end
+    end
+
+    def fileSavePDF(data)
+      Prawn::Document.generate(@filename) do
+        text "Hello World!"
+      end
     end
 
     def check_s_client(remote_server, port)
@@ -170,19 +179,18 @@ class Scanner
                   puts "Server Don't Supports: TLSv1.2 #{c[0]} #{c[2]} bits"
                 end
               end
-              ensure
-                socket_destination.close if socket_destination rescue nil
-                tcp_socket.close if tcp_socket rescue nil
-              end
+            ensure
+              socket_destination.close if socket_destination rescue nil
+              tcp_socket.close if tcp_socket rescue nil
             end
           end
         end
-        
+      end
+
       begin  
         @threads.map(&:join)
       rescue Interrupt
       end
-
     end
 
     def get_certificate_information(server, port)
@@ -294,8 +302,12 @@ parser = OptionParser.new do |opts|
         options[:check_cert] = true
     end
 
-    opts.on('-o', '--output filename.extension', 'File to save results in') do |filename|
+    opts.on('-o', '--output filename', 'File to save results in') do |filename|
         options[:output] = filename
+    end
+
+    opts.on('-t', '--type filetype', 'Type file: txt, pdf, html') do |filetype|
+      options[:file_type] = filetype
     end
 
     opts.on('-h', '--help', 'Displays Help') do
