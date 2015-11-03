@@ -19,4 +19,53 @@ $: << File.expand_path(File.dirname(File.realpath(__FILE__)) + '/../lib')
 require 'scanssl'
 require 'rubygems'
 
-puts "#{ScanSSL::VERSION}"
+options = {}
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{File.basename($0)} [options]"
+
+  opts.on('-s', '--server server', 'Server to scan') do |server|
+    options[:server] = server
+  end
+
+  opts.on('-p', '--port port', 'Port to scan') do |port|
+    options[:port] = port
+  end
+
+  opts.on('-d', '--debug', 'Debug mode') do
+    options[:debug] = true
+  end
+
+  opts.on('-c', '--certificate', 'Displays certificate information') do
+    options[:check_cert] = true
+  end
+
+  opts.on('-o', '--output filename', 'File to save results in') do |filename|
+    options[:output] = filename
+  end
+
+  opts.on('-t', '--type filetype', 'Type file: txt, pdf, html') do |filetype|
+    options[:file_type] = filetype
+  end
+
+  opts.on('-v', '--version', 'Version number') do
+    puts "ScanSSL version: #{ScanSSL::VERSION}"
+    exit
+  end
+
+  opts.on('-h', '--help', 'Displays Help') do
+    puts opts
+    exit
+  end
+end.parse!
+
+unless options[:server]
+  puts "Missing -s/--server argument!"
+  puts "Try -h"
+  exit
+end
+unless options[:port]
+  puts "Missing -p/--port argument!"
+  puts "Try -h"
+  exit
+end
