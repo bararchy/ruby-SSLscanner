@@ -12,34 +12,47 @@ require 'scanssl/fileExport'
 require 'scanssl/scanHost'
 
 module ScanSSL
-  class Command < Certificate
-    def initialize(options = {})
-      @server       = options[:server]
-      @port         = options[:port]
-      @debug        = options[:debug]
-      @check_cert   = options[:check_cert]
-      @filename     = options[:filename]
-      @filetype     = options[:filetype]
-      @threads      = []
-    end
-
-    def call
-      # In this method I guess we can simply have a kind
-      # of queue for all commands. We can call methods,
-      # get the output and send to colorizeOutput :-)
+  class Command
+    def self.call(options = {})
+      @server = options[:server]
+      @port = options[:port]
 
       # Get Certiticate Information
-      getCertificateInformation = ScanSSL::CertInfo.new(@server, @port)
-      colorizeOutput(getCertificateInformation.get_certificate_information)
+      if options[:check_cert] == true
+        a = ScanSSL::CertInfo.new(@server, @port)
+        # Not sure yet if we need to have an access to one of those
+        # datas so right now I'm returning each of them.
+        # We can convert it to hash or array.
+        colorOutputCert(a.valid?,
+                        a.valid_from, 
+                        a.valid_until, 
+                        a.issuer, 
+                        a.subject, 
+                        a.algorithm, 
+                        a.key_size, 
+                        a.public_key)
+      end
 
+      if options[:check_cert] == nil
+        run = ScanSSL::ScanHost.new
+        run.scan(@server, @port)
+      end
     end
 
-    def colorizeOutput(output)
-      # Each method inside the scanssl/ will need to return
-      # something (using return), and here we are going to
-      # create a nice output using those data
-      puts "Here we are going to colorize the output."
-      puts output
+    def self.colorOutputCert(cValid, cFrom, cUntil, cIssuer, cSubject, cAlgorithm, cKey, cPublic)
+      puts "== Certificate Information ==".bold
+      puts "domain: #{@server}"
+      puts "port: #{@port}"
+      puts "----------------"
+      puts "valid: #{cValid}"
+      puts "valid from:#{cFrom}"
+      puts "valid until: #{cUntil}"
+      puts "issuer: #{cIssuer}"
+      puts "subject: #{cSubject}"
+      puts "algorithm: #{cAlgorithm}"
+      puts "key size: #{cKey}"
+      puts "public key:"
+      puts "#{cPublic}"
     end
   end
 end

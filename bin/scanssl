@@ -39,6 +39,7 @@ begin
 
     opts.on('-c', '--certificate', 'Displays certificate information') do
       options[:check_cert] = true
+      ScanSSL
     end
 
     opts.on('-o', '--output filename', 'File to save results in') do |filename|
@@ -80,8 +81,7 @@ unless options[:port]
 end
 
 pid = fork do
-  execute = ScanSSL::Command.new(options)
-  execute.call
+  ScanSSL::Command.call(options)
 end
 
 Signal.trap("INT") do
