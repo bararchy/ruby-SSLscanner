@@ -5,11 +5,19 @@ module ScanSSL
   #
   class ScanHost < Certificate
     def scan(server, port)
+      ssl2_array = []
+      ssl3_array = []
+      tls1_array = []
+      tls1_1_array = []
+      tls1_2_array = []
+      threads = []
+
       c = []
         PROTOCOLS.each do |protocol|
           ssl_context = OpenSSL::SSL::SSLContext.new
           ssl_context.ciphers = CIPHERS
           ssl_context.options = protocol
+          threads << Thread.new do
             ssl_context.ciphers.each do |cipher|
             begin
               ssl_context = OpenSSL::SSL::SSLContext.new
@@ -30,12 +38,25 @@ module ScanSSL
               if protocol == SSLV3
                 ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[3], protocol)
                 result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
-                printf result
-                else
-                  ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[2], protocol)
-                  result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
-                  printf result
+                ssl3_array << result
+              elsif protocol == TLSV1
+                ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[2], protocol)
+                result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
+                tls1_array << result
+              elsif protocol == TLSV1_1
+                ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[2], protocol)
+                result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
+                tls1_1_array << result
+              elsif protocol == TLSV1_2
+                ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[2], protocol)
+                result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
+                tls1_2_array << result
+              elsif protocol == SSLV2
+                ssl_version, cipher, bits, vulnerability = result_parse(cipher[0], cipher[2], protocol)
+                result = "Server supports: %-22s %-42s %-10s %s\n"%[ssl_version, cipher, bits, vulnerability]
+                ssl2_array << result
               end
+
             rescue Exception => e
               if @debug
                 puts e.message
@@ -58,6 +79,12 @@ module ScanSSL
             end
           end
         end
+    end
+      begin    
+        threads.map(&:join)
+      rescue Interrupt
+      end
+      return ssl3_array, ssl2_array, tls1_array, tls1_1_array, tls1_2_array
     end
 
     def result_parse(cipher_name, cipher_bits, protocol)

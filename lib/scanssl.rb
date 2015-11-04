@@ -35,7 +35,7 @@ module ScanSSL
 
       if options[:check_cert] == nil
         run = ScanSSL::ScanHost.new
-        run.scan(@server, @port)
+        put run.scan(@server, @port)
       end
     end
 
