@@ -10,7 +10,11 @@ Gem::Specification.new do |s|
   s.authors     = ["bararchy", "ik5", "elichai", "Dor Lerner", "wolfedale"]
   s.email       = 'bar.hofesh@gmail.com'
   s.files       = ["lib/scanssl.rb",
-		   "lib/scanssl/version.rb"]
+		   "lib/scanssl/version.rb",
+		   "lib/scanssl/certInfo.rb",
+		   "lib/scanssl/fileExport.rb",
+		   "lib/scanssl/scanHost.rb",
+                   "lib/scanssl/settings.rb"]
   s.homepage	= 'https://github.com/bararchy/ruby-SSLscanner'
   s.license     = 'GPL3'
 
