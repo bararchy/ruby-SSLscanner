@@ -19,7 +19,7 @@ Clone the repo
 
 3) ``` gem install colorize ```
 
-4) ``` gem install pawn ```
+4) ``` gem install prawn ```
 
 5) ``` ruby sslscanner.rb -s google.com -p 443 -c ```
 
