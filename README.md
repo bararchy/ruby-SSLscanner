@@ -61,7 +61,7 @@ TO-DO
 - [x] Use OptionParser or [Cli.k](https://github.com/rubyworks/clik) for command line options
 - [x] Multithreading on Protocols (speeds scan 4 times)
 
-[Licensed under GPLv3](license.txt)
+[Licensed under MIT](license.txt)
 
 Special thanks to:
 * @ik5 (idokan@gmail.com).
