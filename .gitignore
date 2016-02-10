@@ -10,7 +10,8 @@
 /test/tmp/
 /test/version_tmp/
 /tmp/
-
+./idea
+./idea/*
 ## Specific to RubyMotion:
 .dat*
 .repl_history
