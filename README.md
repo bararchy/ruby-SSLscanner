@@ -10,6 +10,13 @@ Ruby 2.0.0 or Higher (ruby 1.9.0 should also work)
 Colorize gem
 
 Installation
+
+```
+gem install ScanSSL
+```
+
+Or
+
 --------------
 Clone the repo
 
